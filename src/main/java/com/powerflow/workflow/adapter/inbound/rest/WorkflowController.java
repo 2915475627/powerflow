@@ -1,5 +1,9 @@
 package com.powerflow.workflow.adapter.inbound.rest;
 
+import com.powerflow.workflow.adapter.outbound.persistence.EntityMapper;
+import com.powerflow.workflow.adapter.outbound.persistence.JpaNodeExecutionRepository;
+import com.powerflow.workflow.adapter.outbound.persistence.PostgresExecutionLogRepository;
+import com.powerflow.workflow.adapter.outbound.persistence.PostgresWorkflowRepository;
 import com.powerflow.workflow.domain.model.*;
 import com.powerflow.workflow.domain.port.inbound.WorkflowUseCase;
 import com.powerflow.workflow.domain.port.outbound.WorkflowRepository;
@@ -14,17 +18,16 @@ public class WorkflowController implements WorkflowUseCase {
 
     private final WorkflowExecutor workflowExecutor;
     private final WorkflowRepository workflowRepository;
-    private final ContextManager contextManager;
-    private final NodeExecutorService nodeExecutorService;
+    private final EntityMapper mapper;
 
-    public WorkflowController(WorkflowExecutor workflowExecutor,
-                               WorkflowRepository workflowRepository,
-                               ContextManager contextManager,
-                               NodeExecutorService nodeExecutorService) {
-        this.workflowExecutor = workflowExecutor;
-        this.workflowRepository = workflowRepository;
-        this.contextManager = contextManager;
-        this.nodeExecutorService = nodeExecutorService;
+    public WorkflowController(JpaNodeExecutionRepository executionRepository) {
+        this.mapper = new EntityMapper();
+        PostgresWorkflowRepository pgWorkflowRepo = new PostgresWorkflowRepository(null, mapper);
+        PostgresExecutionLogRepository pgExecRepo = new PostgresExecutionLogRepository(executionRepository, mapper);
+        ContextManager contextManager = new ContextManager();
+        NodeExecutorService nodeExecutor = new NodeExecutorService(null);
+        this.workflowExecutor = new WorkflowExecutor(pgWorkflowRepo, pgExecRepo, contextManager, nodeExecutor);
+        this.workflowRepository = pgWorkflowRepo;
     }
 
     @Override
@@ -40,7 +43,10 @@ public class WorkflowController implements WorkflowUseCase {
                                @RequestBody Context inputContext) {
         return workflowRepository.findById(workflowId)
             .flatMap(wf -> wf.findNodeById(nodeId))
-            .map(node -> nodeExecutorService.execute(node, inputContext))
+            .map(node -> {
+                NodeExecutorService executor = new NodeExecutorService(null);
+                return executor.execute(node, inputContext);
+            })
             .orElseThrow(() -> new RuntimeException("Node not found: " + nodeId));
     }
 

@@ -2,12 +2,14 @@ package com.powerflow.workflow.adapter.outbound.persistence;
 
 import com.powerflow.workflow.domain.model.Workflow;
 import com.powerflow.workflow.domain.port.outbound.WorkflowRepository;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Repository
+@ConditionalOnProperty(name = "persistence.type", havingValue = "memory", matchIfMissing = true)
 public class InMemoryWorkflowRepository implements WorkflowRepository {
 
     private final Map<String, Workflow> store = new ConcurrentHashMap<>();

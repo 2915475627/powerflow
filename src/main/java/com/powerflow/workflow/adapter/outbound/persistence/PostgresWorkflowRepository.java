@@ -3,6 +3,7 @@ package com.powerflow.workflow.adapter.outbound.persistence;
 import com.powerflow.workflow.adapter.outbound.persistence.entity.*;
 import com.powerflow.workflow.domain.model.Workflow;
 import com.powerflow.workflow.domain.port.outbound.WorkflowRepository;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
+@ConditionalOnProperty(name = "persistence.type", havingValue = "jpa")
 public class PostgresWorkflowRepository implements WorkflowRepository {
 
     private final JpaWorkflowRepository jpaRepository;
