@@ -1,11 +1,15 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom';
+import { Layout } from './components/Layout';
+import { WorkflowsPage } from './pages/WorkflowsPage';
+import { NodeTestPage } from './pages/NodeTestPage';
 
-function App() {
+export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<div>PowerFlow Admin</div>} />
+      <Route path="/" element={<Layout />}>
+        <Route index element={<WorkflowsPage />} />
+        <Route path="test/:workflowId/:nodeId" element={<NodeTestPage />} />
+      </Route>
     </Routes>
-  )
+  );
 }
-
-export default App
