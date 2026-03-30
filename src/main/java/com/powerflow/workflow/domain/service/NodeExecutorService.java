@@ -46,6 +46,7 @@ public class NodeExecutorService {
         try {
             String outputKey = (String) node.getConfig().get("outputKey");
             String expression = (String) node.getConfig().get("expression");
+            String nextNodeId = (String) node.getConfig().get("nextNodeId");
 
             EvaluationContext evalContext = new StandardEvaluationContext();
             evalContext.setVariable("input", context.toMap());
@@ -55,6 +56,15 @@ public class NodeExecutorService {
 
             Map<String, Object> output = new HashMap<>();
             output.put(outputKey, result);
+
+            if (nextNodeId != null) {
+                return NodeResult.builder()
+                    .nodeId(node.getId())
+                    .status(ExecutionStatus.SUCCESS)
+                    .output(output)
+                    .nextNodeId(nextNodeId)
+                    .build();
+            }
 
             return NodeResult.builder()
                 .nodeId(node.getId())
