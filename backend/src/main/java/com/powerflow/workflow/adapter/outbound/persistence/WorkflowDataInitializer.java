@@ -374,6 +374,45 @@ public class WorkflowDataInitializer implements CommandLineRunner {
             )
         );
 
+        // ==================== 定时触发场景 ====================
+        createWorkflow(
+            "schedule-notification",
+            "每日定时发送通知",
+            "START节点+CRON定时触发",
+            "start",
+            List.of(
+                createStartNode("start", "开始", "CRON", "0 9 * * *", null, null),
+                createDataNode("prepare", "准备通知", NodeType.DATA_PROCESSING,
+                    Map.of("outputKey", "content", "expression", "'每日报表通知'", "nextNodeId", "send")),
+                createDataNode("send", "发送通知", NodeType.DATA_PROCESSING,
+                    Map.of("outputKey", "result", "expression", "'通知已发送'"))
+            ),
+            List.of(
+                createEdge("e1", "start", "prepare"),
+                createEdge("e2", "prepare", "send")
+            )
+        );
+
+        // ==================== Webhook触发场景 ====================
+        createWorkflow(
+            "webhook-order",
+            "接收订单Webhook",
+            "START节点+WEBHOOK触发",
+            "start",
+            List.of(
+                createStartNode("start", "开始", "WEBHOOK", null, "/webhook/order",
+                    Map.of("orderId", "order_id", "amount", "order_amount")),
+                createDataNode("validate", "验证订单", NodeType.DATA_PROCESSING,
+                    Map.of("outputKey", "valid", "expression", "true", "nextNodeId", "process")),
+                createDataNode("process", "处理订单", NodeType.DATA_PROCESSING,
+                    Map.of("outputKey", "result", "expression", "'订单处理完成'"))
+            ),
+            List.of(
+                createEdge("e1", "start", "validate"),
+                createEdge("e2", "validate", "process")
+            )
+        );
+
         // ==================== 公共服务场景 ====================
         createWorkflow(
             "public-form-processing",
@@ -557,6 +596,26 @@ public class WorkflowDataInitializer implements CommandLineRunner {
             .id(id)
             .name(name)
             .type(NodeType.SUBWORKFLOW)
+            .config(config)
+            .inputMapping(new HashMap<>())
+            .outputMapping(new HashMap<>())
+            .build();
+    }
+
+    private Node createStartNode(String id, String name, String triggerType,
+                                String cron, String webhookPath,
+                                Map<String, String> fieldMappings) {
+        Map<String, Object> config = new HashMap<>();
+        config.put("triggerType", triggerType);
+        if (cron != null) config.put("cron", cron);
+        if (webhookPath != null) config.put("webhookPath", webhookPath);
+        if (fieldMappings != null) config.put("fieldMappings", new HashMap<>(fieldMappings));
+        config.put("nextNodeId", null);
+
+        return Node.builder()
+            .id(id)
+            .name(name)
+            .type(NodeType.START)
             .config(config)
             .inputMapping(new HashMap<>())
             .outputMapping(new HashMap<>())
