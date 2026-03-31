@@ -514,6 +514,310 @@ export function WorkflowEditorPage() {
                   </div>
                 </>
               )}
+              {selectedNode.type === 'HTTP_REQUEST' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">URL</label>
+                    <input
+                      type="text"
+                      value={nodeConfig.url || ''}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, url: e.target.value })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                      placeholder="https://api.example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Method</label>
+                    <select
+                      value={nodeConfig.method || 'GET'}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, method: e.target.value })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                    >
+                      <option value="GET">GET</option>
+                      <option value="POST">POST</option>
+                      <option value="PUT">PUT</option>
+                      <option value="DELETE">DELETE</option>
+                      <option value="PATCH">PATCH</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Body (JSON)</label>
+                    <textarea
+                      value={typeof nodeConfig.body === 'string' ? nodeConfig.body : JSON.stringify(nodeConfig.body || {}, null, 2)}
+                      onChange={(e) => {
+                        try {
+                          setNodeConfig({ ...nodeConfig, body: JSON.parse(e.target.value) });
+                        } catch {
+                          setNodeConfig({ ...nodeConfig, body: e.target.value });
+                        }
+                      }}
+                      className="w-full border rounded-md px-2 py-1 text-sm h-20"
+                      placeholder='{"key": "value"}'
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">输出 Key</label>
+                    <input
+                      type="text"
+                      value={nodeConfig.outputKey || 'httpResponse'}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, outputKey: e.target.value })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                      placeholder="httpResponse"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">超时 (ms)</label>
+                    <input
+                      type="number"
+                      value={nodeConfig.timeout || 30000}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, timeout: parseInt(e.target.value) })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                    />
+                  </div>
+                </>
+              )}
+              {selectedNode.type === 'LLM_CALL' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
+                    <select
+                      value={nodeConfig.provider || 'openai'}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, provider: e.target.value })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                    >
+                      <option value="openai">OpenAI</option>
+                      <option value="anthropic">Anthropic</option>
+                      <option value="azure">Azure OpenAI</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                    <input
+                      type="text"
+                      value={nodeConfig.model || 'gpt-4'}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, model: e.target.value })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                      placeholder="gpt-4"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Prompt</label>
+                    <textarea
+                      value={nodeConfig.prompt || ''}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, prompt: e.target.value })}
+                      className="w-full border rounded-md px-2 py-1 text-sm h-24"
+                      placeholder="Please process #input.value"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">输出 Key</label>
+                    <input
+                      type="text"
+                      value={nodeConfig.outputKey || 'llmResponse'}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, outputKey: e.target.value })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                      placeholder="llmResponse"
+                    />
+                  </div>
+                </>
+              )}
+              {selectedNode.type === 'PARALLEL' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">策略</label>
+                    <select
+                      value={nodeConfig.strategy || 'AND'}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, strategy: e.target.value })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                    >
+                      <option value="AND">AND (全部完成)</option>
+                      <option value="OR">OR (任一完成)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">分支 (JSON)</label>
+                    <textarea
+                      value={JSON.stringify(nodeConfig.branches || [], null, 2)}
+                      onChange={(e) => {
+                        try {
+                          setNodeConfig({ ...nodeConfig, branches: JSON.parse(e.target.value) });
+                        } catch {}
+                      }}
+                      className="w-full border rounded-md px-2 py-1 text-sm h-32"
+                      placeholder='[{"name": "branch1", "nodeIds": ["n1", "n2"]}]'
+                    />
+                  </div>
+                </>
+              )}
+              {selectedNode.type === 'FOREACH' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">集合表达式</label>
+                    <input
+                      type="text"
+                      value={nodeConfig.collection || '#input.items'}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, collection: e.target.value })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                      placeholder="#input.items"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">循环变量名</label>
+                    <input
+                      type="text"
+                      value={nodeConfig.variableName || 'item'}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, variableName: e.target.value })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                      placeholder="item"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">最大迭代次数</label>
+                    <input
+                      type="number"
+                      value={nodeConfig.maxIterations || 100}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, maxIterations: parseInt(e.target.value) })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">失败时终止</label>
+                    <input
+                      type="checkbox"
+                      checked={nodeConfig.failOnError !== false}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, failOnError: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                  </div>
+                </>
+              )}
+              {selectedNode.type === 'BRANCH' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">分支 (JSON)</label>
+                    <textarea
+                      value={JSON.stringify(nodeConfig.branches || [], null, 2)}
+                      onChange={(e) => {
+                        try {
+                          setNodeConfig({ ...nodeConfig, branches: JSON.parse(e.target.value) });
+                        } catch {}
+                      }}
+                      className="w-full border rounded-md px-2 py-1 text-sm h-32"
+                      placeholder='[{"name": "high", "expression": "#input.value > 100", "nextNodeId": "n1"}]'
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">默认下一节点</label>
+                    <input
+                      type="text"
+                      value={nodeConfig.defaultNextNodeId || ''}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, defaultNextNodeId: e.target.value })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                      placeholder="default-node"
+                    />
+                  </div>
+                </>
+              )}
+              {selectedNode.type === 'SUBWORKFLOW' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">工作流 ID</label>
+                    <input
+                      type="text"
+                      value={nodeConfig.workflowId || ''}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, workflowId: e.target.value })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                      placeholder="sub-workflow-id"
+                    />
+                  </div>
+                </>
+              )}
+              {selectedNode.type === 'TRY_CATCH' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Try 节点 (JSON)</label>
+                    <textarea
+                      value={JSON.stringify(nodeConfig.tryNodes || [], null, 2)}
+                      onChange={(e) => {
+                        try {
+                          setNodeConfig({ ...nodeConfig, tryNodes: JSON.parse(e.target.value) });
+                        } catch {}
+                      }}
+                      className="w-full border rounded-md px-2 py-1 text-sm h-24"
+                      placeholder='["node1", "node2"]'
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Catch 节点 (JSON)</label>
+                    <textarea
+                      value={JSON.stringify(nodeConfig.catchNodes || [], null, 2)}
+                      onChange={(e) => {
+                        try {
+                          setNodeConfig({ ...nodeConfig, catchNodes: JSON.parse(e.target.value) });
+                        } catch {}
+                      }}
+                      className="w-full border rounded-md px-2 py-1 text-sm h-24"
+                      placeholder='["error_handler"]'
+                    />
+                  </div>
+                </>
+              )}
+              {selectedNode.type === 'RETRY' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">最大重试次数</label>
+                    <input
+                      type="number"
+                      value={nodeConfig.maxAttempts || 3}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, maxAttempts: parseInt(e.target.value) })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">初始延迟 (ms)</label>
+                    <input
+                      type="number"
+                      value={nodeConfig.initialDelayMs || 1000}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, initialDelayMs: parseInt(e.target.value) })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">最大延迟 (ms)</label>
+                    <input
+                      type="number"
+                      value={nodeConfig.maxDelayMs || 30000}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, maxDelayMs: parseInt(e.target.value) })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">退避策略</label>
+                    <select
+                      value={nodeConfig.backoffStrategy || 'EXPONENTIAL'}
+                      onChange={(e) => setNodeConfig({ ...nodeConfig, backoffStrategy: e.target.value })}
+                      className="w-full border rounded-md px-2 py-1 text-sm"
+                    >
+                      <option value="FIXED">固定</option>
+                      <option value="EXPONENTIAL">指数</option>
+                      <option value="FIBONACCI">斐波那契</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">目标节点 (JSON)</label>
+                    <textarea
+                      value={JSON.stringify(nodeConfig.targetNodeIds || [], null, 2)}
+                      onChange={(e) => {
+                        try {
+                          setNodeConfig({ ...nodeConfig, targetNodeIds: JSON.parse(e.target.value) });
+                        } catch {}
+                      }}
+                      className="w-full border rounded-md px-2 py-1 text-sm h-20"
+                      placeholder='["node1"]'
+                    />
+                  </div>
+                </>
+              )}
               <div className="flex space-x-2 pt-2">
                 <button
                   onClick={updateSelectedNode}
