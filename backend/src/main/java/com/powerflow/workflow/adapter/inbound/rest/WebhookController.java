@@ -65,7 +65,7 @@ public class WebhookController {
 
         // 3. Execute workflow
         try {
-            WorkflowExecutionResult result = workflowExecutor.execute(targetWorkflow, ctx);
+            WorkflowExecutionResult result = workflowExecutor.execute(targetWorkflow.getId(), ctx);
 
             triggerLogRepository.save(TriggerExecutionLog.builder()
                 .id(UUID.randomUUID().toString())

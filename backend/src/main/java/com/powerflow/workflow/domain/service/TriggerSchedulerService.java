@@ -84,7 +84,7 @@ public class TriggerSchedulerService {
         workflowRepository.findById(workflowId).ifPresent(workflow -> {
             try {
                 Context ctx = new Context(Map.of());
-                WorkflowExecutionResult result = workflowExecutor.execute(workflow, ctx);
+                WorkflowExecutionResult result = workflowExecutor.execute(workflowId, ctx);
                 String cron = workflow.findNodeById(workflow.getStartNodeId())
                     .map(n -> (String) n.getConfig().get("cron"))
                     .orElse("");

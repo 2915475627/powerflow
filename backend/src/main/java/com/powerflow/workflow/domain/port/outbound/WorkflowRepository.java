@@ -7,6 +7,7 @@ import java.util.Optional;
 public interface WorkflowRepository {
     Optional<Workflow> findById(String id);
     List<Workflow> findAll();
+    List<Workflow> findByEnabled(boolean enabled);
     Workflow save(Workflow workflow);
     void delete(String id);
 }

@@ -75,7 +75,18 @@ public class NodeExecutorService implements NodeExecutorPort, NodeExecutorCallba
             case SUBWORKFLOW -> subworkflowHandler.execute(node, context);
             case TRY_CATCH -> tryCatchHandler.execute(node, context);
             case RETRY -> retryHandler.execute(node, context);
+            case START -> executeStartNode(node, context);
         };
+    }
+
+    private NodeResult executeStartNode(Node node, Context context) {
+        String nextNodeId = (String) node.getConfig().get("nextNodeId");
+        return NodeResult.builder()
+            .nodeId(node.getId())
+            .status(ExecutionStatus.SUCCESS)
+            .output(Map.of())
+            .nextNodeId(nextNodeId)
+            .build();
     }
 
     private String transformMapAccess(String expression) {
