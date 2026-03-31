@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useWorkflows, useCreateWorkflow, useDeleteWorkflow, useExecuteWorkflow } from '../hooks/useWorkflow';
 import type { Workflow, Context } from '../types/workflow';
 
@@ -7,18 +8,28 @@ export function WorkflowsPage() {
   const createWorkflow = useCreateWorkflow();
   const deleteWorkflow = useDeleteWorkflow();
   const executeWorkflow = useExecuteWorkflow();
+  const navigate = useNavigate();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [executeContext, setExecuteContext] = useState('');
   const [executeResult, setExecuteResult] = useState<any>(null);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
+  const [nameWarning, setNameWarning] = useState<string | null>(null);
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const workflowName = formData.get('name') as string;
+
+    // Check for duplicate name
+    if (workflows?.some(w => w.name === workflowName)) {
+      setNameWarning(`工作流名称 "${workflowName}" 已存在，请使用其他名称`);
+      return;
+    }
+
     const workflow: Workflow = {
       id: formData.get('id') as string,
-      name: formData.get('name') as string,
+      name: workflowName,
       description: formData.get('description') as string,
       startNodeId: formData.get('startNodeId') as string,
       nodes: {},
@@ -26,6 +37,7 @@ export function WorkflowsPage() {
     };
     await createWorkflow.mutateAsync(workflow);
     setShowCreateModal(false);
+    setNameWarning(null);
   };
 
   const handleExecute = async (workflowId: string) => {
@@ -76,6 +88,12 @@ export function WorkflowsPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
                     <button
+                      onClick={() => navigate(`/editor?id=${workflow.id}`)}
+                      className="text-green-600 hover:text-green-900"
+                    >
+                      编辑
+                    </button>
+                    <button
                       onClick={() => {
                         setSelectedWorkflowId(workflow.id);
                         setExecuteResult(null);
@@ -104,8 +122,14 @@ export function WorkflowsPage() {
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => { setShowCreateModal(false); setNameWarning(null); }}
+        >
+          <div
+            className="bg-white rounded-lg p-6 w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 className="text-xl font-bold mb-4">创建工作流</h2>
             <form onSubmit={handleCreate}>
               <div className="mb-4">
@@ -126,7 +150,11 @@ export function WorkflowsPage() {
                   required
                   className="w-full rounded-md border border-gray-300 px-3 py-2"
                   placeholder="我的工作流"
+                  onChange={() => setNameWarning(null)}
                 />
+                {nameWarning && (
+                  <p className="mt-1 text-sm text-amber-600">{nameWarning}</p>
+                )}
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">描述</label>
@@ -149,7 +177,7 @@ export function WorkflowsPage() {
               <div className="flex justify-end space-x-2">
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => { setShowCreateModal(false); setNameWarning(null); }}
                   className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
                 >
                   取消
