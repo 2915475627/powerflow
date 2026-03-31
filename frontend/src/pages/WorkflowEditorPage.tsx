@@ -261,8 +261,8 @@ function LLMConfigPanel({ config, onChange }: { config: any; onChange: (c: any) 
   );
 }
 
-// Node Templates Management Panel - for selecting template to fill node config
-function NodeTemplatesPanel({
+// Node Templates Dropdown - for selecting template to fill node config
+function NodeTemplatesDropdown({
   nodeType,
   onSelectTemplate,
 }: {
@@ -276,44 +276,27 @@ function NodeTemplatesPanel({
   }
 
   if (!templates || templates.length === 0) {
-    return (
-      <div className="text-sm text-gray-500">
-        暂无{nodeType}类型的模板，请在「节点配置」页面创建
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="space-y-3">
-      <h4 className="font-medium text-gray-900">选择模板自动填充配置</h4>
-      <p className="text-xs text-gray-500">选择一个模板，配置将自动填入节点配置表单</p>
-      <div className="space-y-2 max-h-80 overflow-y-auto">
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">加载配置</label>
+      <select
+        value=""
+        onChange={(e) => {
+          const template = templates.find(t => t.id === e.target.value);
+          if (template) onSelectTemplate(template);
+        }}
+        className="w-full border rounded-md px-2 py-1 text-sm"
+      >
+        <option value="">-- 选择模板 --</option>
         {templates.map(template => (
-          <button
-            key={template.id}
-            onClick={() => onSelectTemplate(template)}
-            className="w-full border rounded-lg p-3 text-left bg-white hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-gray-900">{template.name}</span>
-              <span className={`text-xs px-1.5 py-0.5 rounded ${template.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                {template.active ? '启用' : '禁用'}
-              </span>
-            </div>
-            {template.remark && (
-              <p className="text-xs text-gray-500 mt-1">{template.remark}</p>
-            )}
-            <div className="text-xs text-gray-400 mt-1">
-              {template.nodeType === 'LLM_CALL' && (
-                <span>{(template.config as any)?.provider || 'openai'} / {(template.config as any)?.model || 'gpt-4'}</span>
-              )}
-              {template.nodeType === 'HTTP_REQUEST' && (
-                <span>{(template.config as any)?.method || 'GET'} {(template.config as any)?.url}</span>
-              )}
-            </div>
-          </button>
+          <option key={template.id} value={template.id}>
+            {template.name}
+          </option>
         ))}
-      </div>
+      </select>
     </div>
   );
 }
@@ -495,7 +478,7 @@ export function WorkflowEditorPage() {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [nodeConfig, setNodeConfig] = useState<Record<string, any>>({});
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
-  const [rightTab, setRightTab] = useState<'config' | 'templates' | 'execute'>('config');
+  const [rightTab, setRightTab] = useState<'config' | 'execute'>('config');
   const [justSaved, setJustSaved] = useState(false);
 
   // Load existing workflow if editing
@@ -717,16 +700,6 @@ export function WorkflowEditorPage() {
               节点配置
             </button>
             <button
-              onClick={() => setRightTab('templates')}
-              className={`flex-1 px-4 py-2 text-sm font-medium ${
-                rightTab === 'templates'
-                  ? 'text-indigo-600 border-b-2 border-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              模板管理
-            </button>
-            <button
               onClick={() => setRightTab('execute')}
               className={`flex-1 px-4 py-2 text-sm font-medium ${
                 rightTab === 'execute'
@@ -740,25 +713,20 @@ export function WorkflowEditorPage() {
 
           {/* Tab Content */}
           <div className="flex-1 overflow-y-auto p-4">
-            {rightTab === 'templates' ? (
-              selectedNode ? (
-                <NodeTemplatesPanel
-                  nodeType={selectedNode.type || ''}
-                  onSelectTemplate={(template) => {
-                    setNodeConfig({ ...nodeConfig, ...template.config });
-                  }}
-                />
-              ) : (
-                <div className="text-sm text-gray-500">
-                  请先在画布上选择一个节点
-                </div>
-              )
-            ) : rightTab === 'execute' ? (
+            {rightTab === 'execute' ? (
               <ExecutePanel selectedNode={selectedNode} workflowId={workflowId || ''} />
             ) : selectedNode ? (
               /* Node Config Panel when node selected */
               <div className="space-y-3">
                 <h3 className="font-bold text-gray-900">节点配置</h3>
+
+                {/* Load Config Button */}
+                <NodeTemplatesDropdown
+                  nodeType={selectedNode.type || ''}
+                  onSelectTemplate={(template) => {
+                    setNodeConfig({ ...nodeConfig, ...template.config });
+                  }}
+                />
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">节点名称</label>
                   <input
