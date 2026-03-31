@@ -5,6 +5,9 @@ import com.powerflow.workflow.domain.model.enums.ExecutionStatus;
 import com.powerflow.workflow.domain.model.enums.NodeType;
 import com.powerflow.workflow.domain.port.outbound.ExecutionLogRepository;
 import com.powerflow.workflow.domain.port.outbound.WorkflowRepository;
+import com.powerflow.workflow.domain.service.handler.*;
+import com.powerflow.workflow.adapter.outbound.http.RestTemplateHttpClientAdapter;
+import com.powerflow.workflow.adapter.outbound.persistence.InMemoryWorkflowRepository;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -21,6 +24,14 @@ class WorkflowExecutorTest {
     void should_execute_simple_linear_workflow() {
         WorkflowRepository repo = mock(WorkflowRepository.class);
         ExecutionLogRepository logRepo = mock(ExecutionLogRepository.class);
+
+        HttpRequestHandler httpHandler = new HttpRequestHandler(new RestTemplateHttpClientAdapter());
+        LlmCallHandler llmHandler = new LlmCallHandler();
+        ParallelHandler parallelHandler = new ParallelHandler(new InMemoryWorkflowRepository());
+        ForeachHandler foreachHandler = new ForeachHandler();
+        SubworkflowHandler subworkflowHandler = new SubworkflowHandler(new InMemoryWorkflowRepository());
+        TryCatchHandler tryCatchHandler = new TryCatchHandler();
+        RetryHandler retryHandler = new RetryHandler();
 
         Node node1 = Node.builder()
             .id("node-1")
@@ -42,7 +53,10 @@ class WorkflowExecutorTest {
         when(repo.findById("wf-1")).thenReturn(Optional.of(workflow));
 
         ContextManager contextManager = new ContextManager();
-        NodeExecutorService nodeExecutor = new NodeExecutorService();
+        NodeExecutorService nodeExecutor = new NodeExecutorService(
+            httpHandler, llmHandler, parallelHandler, foreachHandler,
+            subworkflowHandler, tryCatchHandler, retryHandler
+        );
         WorkflowExecutor executor = new WorkflowExecutor(repo, logRepo, contextManager, nodeExecutor);
 
         Context inputContext = new Context(Map.of("amount", 500));
@@ -59,8 +73,19 @@ class WorkflowExecutorTest {
         ExecutionLogRepository logRepo = mock(ExecutionLogRepository.class);
         when(repo.findById("non-existent")).thenReturn(Optional.empty());
 
+        HttpRequestHandler httpHandler = new HttpRequestHandler(new RestTemplateHttpClientAdapter());
+        LlmCallHandler llmHandler = new LlmCallHandler();
+        ParallelHandler parallelHandler = new ParallelHandler(new InMemoryWorkflowRepository());
+        ForeachHandler foreachHandler = new ForeachHandler();
+        SubworkflowHandler subworkflowHandler = new SubworkflowHandler(new InMemoryWorkflowRepository());
+        TryCatchHandler tryCatchHandler = new TryCatchHandler();
+        RetryHandler retryHandler = new RetryHandler();
+
         ContextManager contextManager = new ContextManager();
-        NodeExecutorService nodeExecutor = new NodeExecutorService();
+        NodeExecutorService nodeExecutor = new NodeExecutorService(
+            httpHandler, llmHandler, parallelHandler, foreachHandler,
+            subworkflowHandler, tryCatchHandler, retryHandler
+        );
         WorkflowExecutor executor = new WorkflowExecutor(repo, logRepo, contextManager, nodeExecutor);
 
         Context ctx = new Context();

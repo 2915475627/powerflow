@@ -4,4 +4,5 @@ import com.powerflow.workflow.domain.model.*;
 
 public interface NodeExecutorPort {
     NodeResult execute(Node node, Context context);
+    NodeExecutorCallback getCallback();
 }

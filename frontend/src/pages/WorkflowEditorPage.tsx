@@ -52,9 +52,126 @@ function ConditionNode({ data }: { data: any }) {
   );
 }
 
+function HttpRequestNode({ data }: { data: any }) {
+  return (
+    <div className="px-4 py-2 bg-white border-2 border-green-500 rounded-lg shadow-md min-w-[150px]">
+      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-green-500" />
+      <div className="font-medium text-gray-900">HTTP 请求</div>
+      <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
+      {data.config?.url && (
+        <div className="text-xs text-gray-400 mt-1 truncate">{data.config.method || 'GET'} {data.config.url}</div>
+      )}
+      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-green-500" />
+    </div>
+  );
+}
+
+function LlmCallNode({ data }: { data: any }) {
+  return (
+    <div className="px-4 py-2 bg-white border-2 border-purple-500 rounded-lg shadow-md min-w-[150px]">
+      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-purple-500" />
+      <div className="font-medium text-gray-900">LLM 调用</div>
+      <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
+      {data.config?.model && (
+        <div className="text-xs text-gray-400 mt-1 truncate">{data.config.provider || 'openai'}/{data.config.model}</div>
+      )}
+      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-purple-500" />
+    </div>
+  );
+}
+
+function ParallelNode({ data }: { data: any }) {
+  return (
+    <div className="px-4 py-2 bg-white border-2 border-cyan-500 rounded-lg shadow-md min-w-[150px]">
+      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-cyan-500" />
+      <div className="font-medium text-gray-900">并行执行</div>
+      <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
+      {data.config?.branches && (
+        <div className="text-xs text-gray-400 mt-1">{data.config.branches.length} 个分支</div>
+      )}
+      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-cyan-500" />
+    </div>
+  );
+}
+
+function ForeachNode({ data }: { data: any }) {
+  return (
+    <div className="px-4 py-2 bg-white border-2 border-pink-500 rounded-lg shadow-md min-w-[150px]">
+      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-pink-500" />
+      <div className="font-medium text-gray-900">循环迭代</div>
+      <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
+      {data.config?.collection && (
+        <div className="text-xs text-gray-400 mt-1 truncate">集合: {data.config.collection}</div>
+      )}
+      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-pink-500" />
+    </div>
+  );
+}
+
+function BranchNode({ data }: { data: any }) {
+  return (
+    <div className="px-4 py-2 bg-white border-2 border-orange-500 rounded-lg shadow-md min-w-[150px]">
+      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-orange-500" />
+      <div className="font-medium text-gray-900">分支</div>
+      <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
+      {data.config?.branches && (
+        <div className="text-xs text-gray-400 mt-1">{data.config.branches.length} 个分支</div>
+      )}
+      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-orange-500" />
+    </div>
+  );
+}
+
+function SubworkflowNode({ data }: { data: any }) {
+  return (
+    <div className="px-4 py-2 bg-white border-2 border-teal-500 rounded-lg shadow-md min-w-[150px]">
+      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-teal-500" />
+      <div className="font-medium text-gray-900">子工作流</div>
+      <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
+      {data.config?.workflowId && (
+        <div className="text-xs text-gray-400 mt-1 truncate">工作流: {data.config.workflowId}</div>
+      )}
+      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-teal-500" />
+    </div>
+  );
+}
+
+function TryCatchNode({ data }: { data: any }) {
+  return (
+    <div className="px-4 py-2 bg-white border-2 border-red-500 rounded-lg shadow-md min-w-[150px]">
+      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-red-500" />
+      <div className="font-medium text-gray-900">异常捕获</div>
+      <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
+      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-red-500" />
+    </div>
+  );
+}
+
+function RetryNode({ data }: { data: any }) {
+  return (
+    <div className="px-4 py-2 bg-white border-2 border-yellow-500 rounded-lg shadow-md min-w-[150px]">
+      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-yellow-500" />
+      <div className="font-medium text-gray-900">重试</div>
+      <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
+      {data.config?.maxAttempts && (
+        <div className="text-xs text-gray-400 mt-1">最多 {data.config.maxAttempts} 次</div>
+      )}
+      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-yellow-500" />
+    </div>
+  );
+}
+
 const nodeTypes: NodeTypes = {
   DATA_PROCESSING: DataProcessingNode,
   CONDITION: ConditionNode,
+  HTTP_REQUEST: HttpRequestNode,
+  LLM_CALL: LlmCallNode,
+  PARALLEL: ParallelNode,
+  FOREACH: ForeachNode,
+  BRANCH: BranchNode,
+  SUBWORKFLOW: SubworkflowNode,
+  TRY_CATCH: TryCatchNode,
+  RETRY: RetryNode,
 };
 
 const defaultNodes: Node[] = [
@@ -122,17 +239,41 @@ export function WorkflowEditorPage() {
     setNodeConfig((node.data as any)?.config || {});
   }, []);
 
-  const addNode = (type: 'DATA_PROCESSING' | 'CONDITION') => {
+  const addNode = (type: string) => {
+    const typeLabels: Record<string, string> = {
+      DATA_PROCESSING: '新数据节点',
+      CONDITION: '新条件节点',
+      HTTP_REQUEST: '新HTTP请求',
+      LLM_CALL: '新LLM调用',
+      PARALLEL: '新并行节点',
+      FOREACH: '新循环节点',
+      BRANCH: '新分支节点',
+      SUBWORKFLOW: '新子工作流',
+      TRY_CATCH: '新异常捕获',
+      RETRY: '新重试节点',
+    };
+
+    const defaultConfigs: Record<string, Record<string, unknown>> = {
+      DATA_PROCESSING: { outputKey: 'result', expression: '#input.value' },
+      CONDITION: { conditions: [], defaultNextNodeId: '' },
+      HTTP_REQUEST: { url: 'https://api.example.com', method: 'GET', outputKey: 'httpResponse' },
+      LLM_CALL: { provider: 'openai', model: 'gpt-4', prompt: 'Please process this input', outputKey: 'llmResponse' },
+      PARALLEL: { branches: [], strategy: 'AND' },
+      FOREACH: { collection: '#input.items', variableName: 'item', subgraphNodeIds: [] },
+      BRANCH: { branches: [], defaultNextNodeId: '' },
+      SUBWORKFLOW: { workflowId: '', nextNodeId: '' },
+      TRY_CATCH: { tryNodes: [], catchNodes: [] },
+      RETRY: { maxAttempts: 3, initialDelayMs: 1000, backoffStrategy: 'EXPONENTIAL', targetNodeIds: [] },
+    };
+
     const newNode: Node = {
       id: `${type}-${Date.now()}`,
       type,
       position: { x: Math.random() * 400 + 100, y: Math.random() * 300 + 100 },
       data: {
-        label: type === 'DATA_PROCESSING' ? '新数据节点' : '新条件节点',
+        label: typeLabels[type] || '新节点',
         type,
-        config: type === 'DATA_PROCESSING'
-          ? { outputKey: 'result', expression: '#input.value' }
-          : { conditions: [], defaultNextNodeId: '' },
+        config: defaultConfigs[type] || {},
       },
     };
     setNodes((nds) => [...nds, newNode]);
@@ -226,6 +367,54 @@ export function WorkflowEditorPage() {
             className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-md text-sm hover:bg-amber-200"
           >
             + 条件节点
+          </button>
+          <button
+            onClick={() => addNode('HTTP_REQUEST')}
+            className="px-3 py-1.5 bg-green-100 text-green-700 rounded-md text-sm hover:bg-green-200"
+          >
+            + HTTP
+          </button>
+          <button
+            onClick={() => addNode('LLM_CALL')}
+            className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md text-sm hover:bg-purple-200"
+          >
+            + LLM
+          </button>
+          <button
+            onClick={() => addNode('PARALLEL')}
+            className="px-3 py-1.5 bg-cyan-100 text-cyan-700 rounded-md text-sm hover:bg-cyan-200"
+          >
+            + 并行
+          </button>
+          <button
+            onClick={() => addNode('FOREACH')}
+            className="px-3 py-1.5 bg-pink-100 text-pink-700 rounded-md text-sm hover:bg-pink-200"
+          >
+            + 循环
+          </button>
+          <button
+            onClick={() => addNode('BRANCH')}
+            className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-md text-sm hover:bg-orange-200"
+          >
+            + 分支
+          </button>
+          <button
+            onClick={() => addNode('SUBWORKFLOW')}
+            className="px-3 py-1.5 bg-teal-100 text-teal-700 rounded-md text-sm hover:bg-teal-200"
+          >
+            + 子工作流
+          </button>
+          <button
+            onClick={() => addNode('TRY_CATCH')}
+            className="px-3 py-1.5 bg-red-100 text-red-700 rounded-md text-sm hover:bg-red-200"
+          >
+            + 异常
+          </button>
+          <button
+            onClick={() => addNode('RETRY')}
+            className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-md text-sm hover:bg-yellow-200"
+          >
+            + 重试
           </button>
           <button
             onClick={saveWorkflow}

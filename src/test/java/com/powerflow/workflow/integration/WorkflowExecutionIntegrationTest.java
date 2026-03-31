@@ -7,6 +7,7 @@ import com.powerflow.workflow.domain.model.enums.NodeType;
 import com.powerflow.workflow.domain.service.ContextManager;
 import com.powerflow.workflow.domain.service.NodeExecutorService;
 import com.powerflow.workflow.domain.service.WorkflowExecutor;
+import com.powerflow.workflow.domain.service.handler.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.util.List;
@@ -24,7 +25,21 @@ class WorkflowExecutionIntegrationTest {
         workflowRepository = new InMemoryWorkflowRepository();
         logRepository = new InMemoryExecutionLogRepository();
         ContextManager contextManager = new ContextManager();
-        NodeExecutorService nodeExecutor = new NodeExecutorService();
+
+        HttpRequestHandler httpHandler = new HttpRequestHandler(
+            new com.powerflow.workflow.adapter.outbound.http.RestTemplateHttpClientAdapter()
+        );
+        LlmCallHandler llmHandler = new LlmCallHandler();
+        ParallelHandler parallelHandler = new ParallelHandler(workflowRepository);
+        ForeachHandler foreachHandler = new ForeachHandler();
+        SubworkflowHandler subworkflowHandler = new SubworkflowHandler(workflowRepository);
+        TryCatchHandler tryCatchHandler = new TryCatchHandler();
+        RetryHandler retryHandler = new RetryHandler();
+
+        NodeExecutorService nodeExecutor = new NodeExecutorService(
+            httpHandler, llmHandler, parallelHandler, foreachHandler,
+            subworkflowHandler, tryCatchHandler, retryHandler
+        );
         workflowExecutor = new WorkflowExecutor(workflowRepository, logRepository, contextManager, nodeExecutor);
     }
 

@@ -2,5 +2,13 @@ package com.powerflow.workflow.domain.model.enums;
 
 public enum NodeType {
     DATA_PROCESSING,
-    CONDITION
+    CONDITION,
+    HTTP_REQUEST,
+    LLM_CALL,
+    PARALLEL,
+    FOREACH,
+    BRANCH,
+    SUBWORKFLOW,
+    TRY_CATCH,
+    RETRY
 }

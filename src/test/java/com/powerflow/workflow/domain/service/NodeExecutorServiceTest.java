@@ -3,6 +3,9 @@ package com.powerflow.workflow.domain.service;
 import com.powerflow.workflow.domain.model.*;
 import com.powerflow.workflow.domain.model.enums.ExecutionStatus;
 import com.powerflow.workflow.domain.model.enums.NodeType;
+import com.powerflow.workflow.domain.service.handler.*;
+import com.powerflow.workflow.adapter.outbound.http.RestTemplateHttpClientAdapter;
+import com.powerflow.workflow.adapter.outbound.persistence.InMemoryWorkflowRepository;
 import org.junit.jupiter.api.Test;
 import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -11,7 +14,18 @@ class NodeExecutorServiceTest {
 
     @Test
     void should_execute_data_processing_node() {
-        NodeExecutorService executor = new NodeExecutorService();
+        HttpRequestHandler httpHandler = new HttpRequestHandler(new RestTemplateHttpClientAdapter());
+        LlmCallHandler llmHandler = new LlmCallHandler();
+        ParallelHandler parallelHandler = new ParallelHandler(new InMemoryWorkflowRepository());
+        ForeachHandler foreachHandler = new ForeachHandler();
+        SubworkflowHandler subworkflowHandler = new SubworkflowHandler(new InMemoryWorkflowRepository());
+        TryCatchHandler tryCatchHandler = new TryCatchHandler();
+        RetryHandler retryHandler = new RetryHandler();
+
+        NodeExecutorService executor = new NodeExecutorService(
+            httpHandler, llmHandler, parallelHandler, foreachHandler,
+            subworkflowHandler, tryCatchHandler, retryHandler
+        );
         Context ctx = new Context(Map.of("amount", 1000));
 
         Node node = Node.builder()
@@ -28,7 +42,18 @@ class NodeExecutorServiceTest {
 
     @Test
     void should_execute_condition_node_and_return_next_node() {
-        NodeExecutorService executor = new NodeExecutorService();
+        HttpRequestHandler httpHandler = new HttpRequestHandler(new RestTemplateHttpClientAdapter());
+        LlmCallHandler llmHandler = new LlmCallHandler();
+        ParallelHandler parallelHandler = new ParallelHandler(new InMemoryWorkflowRepository());
+        ForeachHandler foreachHandler = new ForeachHandler();
+        SubworkflowHandler subworkflowHandler = new SubworkflowHandler(new InMemoryWorkflowRepository());
+        TryCatchHandler tryCatchHandler = new TryCatchHandler();
+        RetryHandler retryHandler = new RetryHandler();
+
+        NodeExecutorService executor = new NodeExecutorService(
+            httpHandler, llmHandler, parallelHandler, foreachHandler,
+            subworkflowHandler, tryCatchHandler, retryHandler
+        );
         Context ctx = new Context(Map.of("amount", 1500));
 
         Node conditionNode = Node.builder()
