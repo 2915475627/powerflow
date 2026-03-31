@@ -16,7 +16,7 @@ import {
   Position,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useCreateWorkflow, useWorkflow, useWorkflows, useNodeTemplates, useNodeTemplatesByType } from '../hooks/useWorkflow';
+import { useCreateWorkflow, useWorkflow, useWorkflows, useNodeTemplatesByType } from '../hooks/useWorkflow';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Workflow, WorkflowNode, WorkflowEdge, NodeTemplate } from '../types/workflow';
 
@@ -261,163 +261,57 @@ function LLMConfigPanel({ config, onChange }: { config: any; onChange: (c: any) 
   );
 }
 
-// Node Templates Management Panel
-function NodeTemplatesPanel() {
-  const { data: templates, isLoading } = useNodeTemplates();
-  const [editingTemplate, setEditingTemplate] = useState<NodeTemplate | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState<Partial<NodeTemplate>>({});
-
-  const nodeTypeOptions = [
-    { value: 'LLM_CALL', label: 'LLM 调用' },
-    { value: 'HTTP_REQUEST', label: 'HTTP 请求' },
-  ];
-
-  const handleEdit = (template: NodeTemplate) => {
-    setEditingTemplate(template);
-    setFormData(template);
-    setShowForm(true);
-  };
-
-  const handleCreate = () => {
-    setEditingTemplate(null);
-    setFormData({ name: '', nodeType: 'LLM_CALL', config: {}, active: true });
-    setShowForm(true);
-  };
-
-  const handleSave = () => {
-    // In a real app, this would call an API to save
-    setShowForm(false);
-    setEditingTemplate(null);
-  };
+// Node Templates Management Panel - for selecting template to fill node config
+function NodeTemplatesPanel({
+  nodeType,
+  onSelectTemplate,
+}: {
+  nodeType: string;
+  onSelectTemplate: (template: NodeTemplate) => void;
+}) {
+  const { data: templates, isLoading } = useNodeTemplatesByType(nodeType);
 
   if (isLoading) {
     return <div className="text-sm text-gray-500">加载中...</div>;
   }
 
-  if (showForm) {
+  if (!templates || templates.length === 0) {
     return (
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h4 className="font-medium text-gray-900">{editingTemplate ? '编辑模板' : '新建模板'}</h4>
-          <button onClick={() => setShowForm(false)} className="text-gray-500 hover:text-gray-700">取消</button>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">名称</label>
-          <input
-            type="text"
-            value={formData.name || ''}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full border rounded-md px-2 py-1 text-sm"
-            placeholder="模板名称"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">节点类型</label>
-          <select
-            value={formData.nodeType || 'LLM_CALL'}
-            onChange={(e) => setFormData({ ...formData, nodeType: e.target.value as any })}
-            className="w-full border rounded-md px-2 py-1 text-sm"
-          >
-            {nodeTypeOptions.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
-          <select
-            value={(formData.config as any)?.provider || 'openai'}
-            onChange={(e) => setFormData({ ...formData, config: { ...formData.config, provider: e.target.value } })}
-            className="w-full border rounded-md px-2 py-1 text-sm"
-          >
-            <option value="openai">OpenAI</option>
-            <option value="anthropic">Anthropic</option>
-            <option value="azure">Azure OpenAI</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
-          <input
-            type="text"
-            value={(formData.config as any)?.model || 'gpt-4'}
-            onChange={(e) => setFormData({ ...formData, config: { ...formData.config, model: e.target.value } })}
-            className="w-full border rounded-md px-2 py-1 text-sm"
-            placeholder="gpt-4"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Temperature</label>
-          <input
-            type="number"
-            step="0.1"
-            min="0"
-            max="2"
-            value={(formData.config as any)?.temperature ?? 0.7}
-            onChange={(e) => setFormData({ ...formData, config: { ...formData.config, temperature: parseFloat(e.target.value) } })}
-            className="w-full border rounded-md px-2 py-1 text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Max Tokens</label>
-          <input
-            type="number"
-            value={(formData.config as any)?.maxTokens || 2000}
-            onChange={(e) => setFormData({ ...formData, config: { ...formData.config, maxTokens: parseInt(e.target.value) } })}
-            className="w-full border rounded-md px-2 py-1 text-sm"
-          />
-        </div>
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="active"
-            checked={formData.active ?? true}
-            onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-            className="w-4 h-4 mr-2"
-          />
-          <label htmlFor="active" className="text-sm text-gray-700">启用</label>
-        </div>
-        <button
-          onClick={handleSave}
-          className="w-full px-3 py-1.5 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700"
-        >
-          保存
-        </button>
+      <div className="text-sm text-gray-500">
+        暂无{nodeType}类型的模板，请在「节点配置」页面创建
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h4 className="font-medium text-gray-900">模板列表</h4>
-        <button
-          onClick={handleCreate}
-          className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs hover:bg-indigo-200"
-        >
-          + 新建
-        </button>
-      </div>
-      <div className="space-y-2 max-h-64 overflow-y-auto">
-        {templates?.map(template => (
-          <div key={template.id} className="border rounded-md p-2 text-sm">
+      <h4 className="font-medium text-gray-900">选择模板自动填充配置</h4>
+      <p className="text-xs text-gray-500">选择一个模板，配置将自动填入节点配置表单</p>
+      <div className="space-y-2 max-h-80 overflow-y-auto">
+        {templates.map(template => (
+          <button
+            key={template.id}
+            onClick={() => onSelectTemplate(template)}
+            className="w-full border rounded-lg p-3 text-left bg-white hover:shadow-md transition-shadow"
+          >
             <div className="flex items-center justify-between">
-              <span className="font-medium">{template.name}</span>
+              <span className="font-medium text-gray-900">{template.name}</span>
               <span className={`text-xs px-1.5 py-0.5 rounded ${template.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                 {template.active ? '启用' : '禁用'}
               </span>
             </div>
-            <div className="text-xs text-gray-500 mt-1">
-              {template.nodeType === 'LLM_CALL' && `${(template.config as any)?.provider || 'openai'}/${(template.config as any)?.model || 'gpt-4'}`}
-              {template.nodeType === 'HTTP_REQUEST' && (template.config as any)?.url}
+            {template.remark && (
+              <p className="text-xs text-gray-500 mt-1">{template.remark}</p>
+            )}
+            <div className="text-xs text-gray-400 mt-1">
+              {template.nodeType === 'LLM_CALL' && (
+                <span>{(template.config as any)?.provider || 'openai'} / {(template.config as any)?.model || 'gpt-4'}</span>
+              )}
+              {template.nodeType === 'HTTP_REQUEST' && (
+                <span>{(template.config as any)?.method || 'GET'} {(template.config as any)?.url}</span>
+              )}
             </div>
-            <button
-              onClick={() => handleEdit(template)}
-              className="mt-1 text-xs text-indigo-600 hover:text-indigo-800"
-            >
-              编辑
-            </button>
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -460,6 +354,109 @@ function NodeTypeListPanel({ onAddNode }: { onAddNode: (type: string) => void })
   );
 }
 
+// Execute Panel for node testing
+function ExecutePanel({
+  selectedNode,
+  workflowId,
+}: {
+  selectedNode: Node | null;
+  workflowId: string;
+}) {
+  const [context, setContext] = useState('{"input": {}}');
+  const [result, setResult] = useState<any>(null);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleExecute = async () => {
+    if (!selectedNode || !workflowId) return;
+
+    setIsExecuting(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const response = await fetch(`/api/workflows/${workflowId}/nodes/${selectedNode.id}/test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: context,
+      });
+
+      if (!response.ok) {
+        throw new Error(`执行失败: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setResult(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '执行失败');
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  if (!selectedNode) {
+    return (
+      <div className="text-sm text-gray-500">
+        请先在画布上选择一个节点进行测试
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h4 className="font-medium text-gray-900 mb-2">节点执行测试</h4>
+        <div className="text-sm text-gray-500 mb-3">
+          节点: <span className="font-mono text-gray-700">{selectedNode.id}</span>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Context (JSON)</label>
+        <textarea
+          value={context}
+          onChange={(e) => setContext(e.target.value)}
+          className="w-full border rounded-md px-2 py-1 text-sm h-32 font-mono"
+          placeholder='{"input": {"value": "test"}}'
+        />
+      </div>
+
+      <button
+        onClick={handleExecute}
+        disabled={isExecuting || !workflowId}
+        className="w-full px-3 py-2 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isExecuting ? '执行中...' : '执行测试'}
+      </button>
+
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+          <div className="text-sm text-red-700 font-medium">执行失败</div>
+          <div className="text-xs text-red-600 mt-1">{error}</div>
+        </div>
+      )}
+
+      {result && (
+        <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+          <div className="text-sm text-green-700 font-medium mb-1">
+            执行成功 {result.success !== false ? '' : '(部分成功)'}
+          </div>
+          {result.output && (
+            <div className="text-xs text-green-600 mt-1">
+              <pre className="whitespace-pre-wrap">{JSON.stringify(result.output, null, 2)}</pre>
+            </div>
+          )}
+          {result.error && (
+            <div className="text-xs text-red-600 mt-1">
+              错误: {result.error}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const nodeTypes: NodeTypes = {
   DATA_PROCESSING: DataProcessingNode,
   CONDITION: ConditionNode,
@@ -498,7 +495,7 @@ export function WorkflowEditorPage() {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [nodeConfig, setNodeConfig] = useState<Record<string, any>>({});
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
-  const [rightTab, setRightTab] = useState<'config' | 'templates'>('config');
+  const [rightTab, setRightTab] = useState<'config' | 'templates' | 'execute'>('config');
   const [justSaved, setJustSaved] = useState(false);
 
   // Load existing workflow if editing
@@ -729,12 +726,35 @@ export function WorkflowEditorPage() {
             >
               模板管理
             </button>
+            <button
+              onClick={() => setRightTab('execute')}
+              className={`flex-1 px-4 py-2 text-sm font-medium ${
+                rightTab === 'execute'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              执行测试
+            </button>
           </div>
 
           {/* Tab Content */}
           <div className="flex-1 overflow-y-auto p-4">
             {rightTab === 'templates' ? (
-              <NodeTemplatesPanel />
+              selectedNode ? (
+                <NodeTemplatesPanel
+                  nodeType={selectedNode.type || ''}
+                  onSelectTemplate={(template) => {
+                    setNodeConfig({ ...nodeConfig, ...template.config });
+                  }}
+                />
+              ) : (
+                <div className="text-sm text-gray-500">
+                  请先在画布上选择一个节点
+                </div>
+              )
+            ) : rightTab === 'execute' ? (
+              <ExecutePanel selectedNode={selectedNode} workflowId={workflowId || ''} />
             ) : selectedNode ? (
               /* Node Config Panel when node selected */
               <div className="space-y-3">

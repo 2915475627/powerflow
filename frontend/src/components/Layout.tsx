@@ -29,6 +29,12 @@ export function Layout() {
                 >
                   监控
                 </Link>
+                <Link
+                  to="/node-config"
+                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600"
+                >
+                  节点配置
+                </Link>
               </div>
             </div>
           </div>

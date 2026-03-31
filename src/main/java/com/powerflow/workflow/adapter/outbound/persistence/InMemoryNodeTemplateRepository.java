@@ -34,6 +34,8 @@ public class InMemoryNodeTemplateRepository implements NodeTemplateRepository {
                 "maxTokens", 2000
             ))
             .active(true)
+            .remark("主用模型，综合能力强")
+            .website("https://platform.openai.com/docs/models/gpt-4")
             .build());
 
         // OpenAI GPT-4 Turbo
@@ -48,6 +50,8 @@ public class InMemoryNodeTemplateRepository implements NodeTemplateRepository {
                 "maxTokens", 4000
             ))
             .active(true)
+            .remark("更快速度，更长上下文")
+            .website("https://platform.openai.com/docs/models/gpt-4-turbo")
             .build());
 
         // OpenAI GPT-3.5 Turbo
@@ -62,6 +66,8 @@ public class InMemoryNodeTemplateRepository implements NodeTemplateRepository {
                 "maxTokens", 2000
             ))
             .active(true)
+            .remark("轻量快速，简单任务")
+            .website("https://platform.openai.com/docs/models/gpt-3-5-turbo")
             .build());
 
         // Anthropic Claude 3 Opus
@@ -76,6 +82,8 @@ public class InMemoryNodeTemplateRepository implements NodeTemplateRepository {
                 "maxTokens", 4000
             ))
             .active(true)
+            .remark("最强模型，复杂推理")
+            .website("https://docs.anthropic.com/claude/docs/models-overview")
             .build());
 
         // Anthropic Claude 3 Sonnet
@@ -90,6 +98,8 @@ public class InMemoryNodeTemplateRepository implements NodeTemplateRepository {
                 "maxTokens", 4000
             ))
             .active(true)
+            .remark("平衡之选")
+            .website("https://docs.anthropic.com/claude/docs/models-overview")
             .build());
 
         // Anthropic Claude 3 Haiku
@@ -104,6 +114,8 @@ public class InMemoryNodeTemplateRepository implements NodeTemplateRepository {
                 "maxTokens", 4000
             ))
             .active(true)
+            .remark("最快速度，简单任务")
+            .website("https://docs.anthropic.com/claude/docs/models-overview")
             .build());
 
         // Azure OpenAI GPT-4
@@ -119,6 +131,8 @@ public class InMemoryNodeTemplateRepository implements NodeTemplateRepository {
                 "apiVersion", "2024-02-01"
             ))
             .active(true)
+            .remark("企业版，安全性高")
+            .website("https://learn.microsoft.com/azure/ai-services/openai/")
             .build());
 
         // HTTP Request Templates
@@ -133,6 +147,7 @@ public class InMemoryNodeTemplateRepository implements NodeTemplateRepository {
                 "outputKey", "httpResponse"
             ))
             .active(true)
+            .remark("通用GET请求模板")
             .build());
 
         store.put("http-post-json", NodeTemplate.builder()
@@ -146,6 +161,7 @@ public class InMemoryNodeTemplateRepository implements NodeTemplateRepository {
                 "outputKey", "httpResponse"
             ))
             .active(true)
+            .remark("通用POST请求模板")
             .build());
     }
 

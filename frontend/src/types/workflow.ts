@@ -66,4 +66,6 @@ export interface NodeTemplate {
   nodeType: string;
   config: Record<string, unknown>;
   active: boolean;
+  remark?: string;
+  website?: string;
 }
