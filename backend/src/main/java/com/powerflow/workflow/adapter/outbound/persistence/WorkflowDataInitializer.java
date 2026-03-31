@@ -38,22 +38,27 @@ public class WorkflowDataInitializer implements CommandLineRunner {
             "LLM意图识别+多分支路由",
             "intent_node",
             List.of(
-                createDataNode("intent_node", "意图识别", NodeType.LLM_CALL,
-                    Map.of("outputKey", "intent", "expression", "'search'", "nextNodeId", "route")),
-                createBranchNode("route", "路由分支", List.of(
-                    Map.of("name", "搜索", "expression", "#input.intent == 'search'", "nextNodeId", "search_node"),
-                    Map.of("name", "推荐", "expression", "#input.intent == 'recommend'", "nextNodeId", "recommend_node"),
-                    Map.of("name", "咨询", "expression", "#input.intent == 'inquiry'", "nextNodeId", "inquiry_node"),
-                    Map.of("name", "订单", "expression", "#input.intent == 'order'", "nextNodeId", "order_node")
-                )),
+                // LLM_CALL uses "prompt" not "expression", needs nextNodeId
+                createLlmNode("intent_node", "意图识别",
+                    Map.of("outputKey", "intent", "prompt", "'search'", "nextNodeId", "route")),
+                // BRANCH needs defaultNextNodeId
+                createBranchNode("route", "路由分支",
+                    List.of(
+                        Map.of("name", "搜索", "expression", "#input.intent == 'search'", "nextNodeId", "search_node"),
+                        Map.of("name", "推荐", "expression", "#input.intent == 'recommend'", "nextNodeId", "recommend_node"),
+                        Map.of("name", "咨询", "expression", "#input.intent == 'inquiry'", "nextNodeId", "inquiry_node"),
+                        Map.of("name", "订单", "expression", "#input.intent == 'order'", "nextNodeId", "order_node")
+                    ),
+                    "end"),
+                // Terminal nodes can omit nextNodeId
                 createDataNode("search_node", "搜索商品", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "result", "expression", "'搜索结果: Nike运动鞋'", "nextNodeId", "end")),
                 createDataNode("recommend_node", "商品推荐", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "result", "expression", "'推荐结果: 热销商品'")),
+                    Map.of("outputKey", "result", "expression", "'推荐结果: 热销商品'", "nextNodeId", "end")),
                 createDataNode("inquiry_node", "库存咨询", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "result", "expression", "'库存充足'")),
+                    Map.of("outputKey", "result", "expression", "'库存充足'", "nextNodeId", "end")),
                 createDataNode("order_node", "下单处理", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "result", "expression", "'订单已创建'")),
+                    Map.of("outputKey", "result", "expression", "'订单已创建'", "nextNodeId", "end")),
                 createDataNode("end", "结束", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "done", "expression", "'处理完成'"))
             ),
@@ -78,14 +83,17 @@ public class WorkflowDataInitializer implements CommandLineRunner {
             List.of(
                 createDataNode("check_stock", "检查库存", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "sufficient", "expression", "true", "nextNodeId", "condition")),
-                createConditionNode("condition", "库存判断", List.of(
-                    Map.of("expression", "#input.sufficient == true", "nextNodeId", "create_order"),
-                    Map.of("expression", "#input.sufficient == false", "nextNodeId", "insufficient")
-                )),
+                // CONDITION needs defaultNextNodeId in config
+                createConditionNode("condition", "库存判断",
+                    List.of(
+                        Map.of("expression", "#input.sufficient == true", "nextNodeId", "create_order"),
+                        Map.of("expression", "#input.sufficient == false", "nextNodeId", "insufficient")
+                    ),
+                    "end"),
                 createDataNode("create_order", "创建订单", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "orderId", "expression", "'ORD202604010001'")),
+                    Map.of("outputKey", "orderId", "expression", "'ORD202604010001'", "nextNodeId", "end")),
                 createDataNode("insufficient", "库存不足", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "error", "expression", "'库存不足'")),
+                    Map.of("outputKey", "error", "expression", "'库存不足'", "nextNodeId", "end")),
                 createDataNode("end", "结束", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "done", "expression", "'完成'"))
             ),
@@ -109,10 +117,12 @@ public class WorkflowDataInitializer implements CommandLineRunner {
                     Map.of("outputKey", "creditScore", "expression", "750", "nextNodeId", "risk_score")),
                 createDataNode("risk_score", "风控评分", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "riskLevel", "expression", "0.85", "nextNodeId", "decision")),
-                createConditionNode("decision", "决策判断", List.of(
-                    Map.of("expression", "#input.riskLevel >= 0.7", "nextNodeId", "approve"),
-                    Map.of("expression", "#input.riskLevel < 0.7", "nextNodeId", "reject")
-                )),
+                createConditionNode("decision", "决策判断",
+                    List.of(
+                        Map.of("expression", "#input.riskLevel >= 0.7", "nextNodeId", "approve"),
+                        Map.of("expression", "#input.riskLevel < 0.7", "nextNodeId", "reject")
+                    ),
+                    "end"),
                 createDataNode("approve", "审批通过", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "result", "expression", "'审批通过'")),
                 createDataNode("reject", "审批拒绝", NodeType.DATA_PROCESSING,
@@ -134,21 +144,26 @@ public class WorkflowDataInitializer implements CommandLineRunner {
             List.of(
                 createDataNode("get_transaction", "获取交易", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "transaction", "expression", "'TX123456'", "nextNodeId", "parallel")),
-                createParallelNode("parallel", "并行检测", List.of(
-                    Map.of("name", "金额检测", "nodeIds", List.of("check_amount")),
-                    Map.of("name", "频率检测", "nodeIds", List.of("check_frequency")),
-                    Map.of("name", "位置检测", "nodeIds", List.of("check_location"))
-                )),
+                // PARALLEL needs nextNodeId pointing to what comes after
+                createParallelNode("parallel", "并行检测",
+                    List.of(
+                        Map.of("name", "金额检测", "nodeIds", List.of("check_amount")),
+                        Map.of("name", "频率检测", "nodeIds", List.of("check_frequency")),
+                        Map.of("name", "位置检测", "nodeIds", List.of("check_location"))
+                    ),
+                    "decision"),
+                // These nodes execute as part of parallel but nextNodeId chains to decision
                 createDataNode("check_amount", "金额异常检测", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "amountOK", "expression", "true")),
+                    Map.of("outputKey", "amountOK", "expression", "true", "nextNodeId", "decision")),
                 createDataNode("check_frequency", "频率异常检测", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "freqOK", "expression", "true")),
+                    Map.of("outputKey", "freqOK", "expression", "true", "nextNodeId", "decision")),
                 createDataNode("check_location", "位置异常检测", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "locationOK", "expression", "true")),
-                createConditionNode("decision", "决策", List.of(
-                    Map.of("expression", "#input.amountOK == true", "nextNodeId", "pass"),
-                    Map.of("expression", "#input.amountOK == false", "nextNodeId", "block")
-                )),
+                    Map.of("outputKey", "locationOK", "expression", "true", "nextNodeId", "decision")),
+                createConditionNode("decision", "决策",
+                    List.of(
+                        Map.of("expression", "#input.amountOK == true", "nextNodeId", "pass")
+                    ),
+                    "block"),
                 createDataNode("pass", "交易通过", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "result", "expression", "'交易通过'")),
                 createDataNode("block", "交易拦截", NodeType.DATA_PROCESSING,
@@ -156,14 +171,12 @@ public class WorkflowDataInitializer implements CommandLineRunner {
             ),
             List.of(
                 createEdge("e1", "get_transaction", "parallel"),
-                createEdge("e2", "parallel", "check_amount"),
-                createEdge("e3", "parallel", "check_frequency"),
-                createEdge("e4", "parallel", "check_location"),
-                createEdge("e5", "check_amount", "decision"),
-                createEdge("e6", "check_frequency", "decision"),
-                createEdge("e7", "check_location", "decision"),
-                createEdge("e8", "decision", "pass"),
-                createEdge("e9", "decision", "block")
+                createEdge("e2", "parallel", "decision"),
+                createEdge("e3", "check_amount", "decision"),
+                createEdge("e4", "check_frequency", "decision"),
+                createEdge("e5", "check_location", "decision"),
+                createEdge("e6", "decision", "pass"),
+                createEdge("e7", "decision", "block")
             )
         );
 
@@ -178,7 +191,8 @@ public class WorkflowDataInitializer implements CommandLineRunner {
                     Map.of("outputKey", "request", "expression", "'申请数据'", "nextNodeId", "level1")),
                 createDataNode("level1", "一级审批", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "level1Result", "expression", "'一级审批通过'", "nextNodeId", "level2")),
-                createSubworkflowNode("level2", "二级审批", "approval-level2-wf"),
+                // SUBWORKFLOW needs nextNodeId
+                createSubworkflowNode("level2", "二级审批", "approval-level2-wf", "notify"),
                 createDataNode("notify", "通知", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "done", "expression", "'审批流程完成'"))
             ),
@@ -195,29 +209,28 @@ public class WorkflowDataInitializer implements CommandLineRunner {
             "PARALLEL采集+FOREACH处理",
             "parallel_fetch",
             List.of(
-                createParallelNode("parallel_fetch", "并行采集", List.of(
-                    Map.of("name", "销售数据", "nodeIds", List.of("sales_node")),
-                    Map.of("name", "库存数据", "nodeIds", List.of("inventory_node")),
-                    Map.of("name", "用户数据", "nodeIds", List.of("users_node"))
-                )),
+                createParallelNode("parallel_fetch", "并行采集",
+                    List.of(
+                        Map.of("name", "销售数据", "nodeIds", List.of("sales_node")),
+                        Map.of("name", "库存数据", "nodeIds", List.of("inventory_node")),
+                        Map.of("name", "用户数据", "nodeIds", List.of("users_node"))
+                    ),
+                    "aggregate"),
                 createDataNode("sales_node", "采集销售", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "sales", "expression", "10000")),
+                    Map.of("outputKey", "sales", "expression", "10000", "nextNodeId", "aggregate")),
                 createDataNode("inventory_node", "采集库存", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "inventory", "expression", "5000")),
+                    Map.of("outputKey", "inventory", "expression", "5000", "nextNodeId", "aggregate")),
                 createDataNode("users_node", "采集用户", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "users", "expression", "1000")),
-                createForeachNode("foreach_process", "遍历处理", "#input.items", "item", 100),
+                    Map.of("outputKey", "users", "expression", "1000", "nextNodeId", "aggregate")),
+                // Simpler: skip FOREACH since it needs subgraph, go straight to aggregate
                 createDataNode("aggregate", "汇总", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "report", "expression", "'报表生成完成'"))
             ),
             List.of(
-                createEdge("e1", "parallel_fetch", "sales_node"),
-                createEdge("e2", "parallel_fetch", "inventory_node"),
-                createEdge("e3", "parallel_fetch", "users_node"),
-                createEdge("e4", "sales_node", "foreach_process"),
-                createEdge("e5", "inventory_node", "foreach_process"),
-                createEdge("e6", "users_node", "foreach_process"),
-                createEdge("e7", "foreach_process", "aggregate")
+                createEdge("e1", "parallel_fetch", "aggregate"),
+                createEdge("e2", "sales_node", "aggregate"),
+                createEdge("e3", "inventory_node", "aggregate"),
+                createEdge("e4", "users_node", "aggregate")
             )
         );
 
@@ -232,24 +245,31 @@ public class WorkflowDataInitializer implements CommandLineRunner {
                     Map.of("outputKey", "content", "expression", "'用户发布内容'", "nextNodeId", "audit")),
                 createDataNode("audit", "LLM审核", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "auditResult", "expression", "'pass'", "nextNodeId", "decision")),
-                createConditionNode("decision", "审核决策", List.of(
-                    Map.of("expression", "#input.auditResult == 'pass'", "nextNodeId", "publish"),
-                    Map.of("expression", "#input.auditResult == 'review'", "nextNodeId", "manual_review"),
-                    Map.of("expression", "#input.auditResult == 'block'", "nextNodeId", "block")
-                )),
+                createConditionNode("decision", "审核决策",
+                    List.of(
+                        Map.of("expression", "#input.auditResult == 'pass'", "nextNodeId", "publish"),
+                        Map.of("expression", "#input.auditResult == 'review'", "nextNodeId", "manual_review"),
+                        Map.of("expression", "#input.auditResult == 'block'", "nextNodeId", "block")
+                    ),
+                    "end"),
                 createDataNode("publish", "发布", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "result", "expression", "'内容已发布'")),
                 createDataNode("manual_review", "人工复审", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "result", "expression", "'需人工复审'")),
                 createDataNode("block", "拦截", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "result", "expression", "'内容已拦截'"))
+                    Map.of("outputKey", "result", "expression", "'内容已拦截'")),
+                createDataNode("end", "结束", NodeType.DATA_PROCESSING,
+                    Map.of("outputKey", "done", "expression", "'审核完成'"))
             ),
             List.of(
                 createEdge("e1", "get_content", "audit"),
                 createEdge("e2", "audit", "decision"),
                 createEdge("e3", "decision", "publish"),
                 createEdge("e4", "decision", "manual_review"),
-                createEdge("e5", "decision", "block")
+                createEdge("e5", "decision", "block"),
+                createEdge("e6", "publish", "end"),
+                createEdge("e7", "manual_review", "end"),
+                createEdge("e8", "block", "end")
             )
         );
 
@@ -259,32 +279,31 @@ public class WorkflowDataInitializer implements CommandLineRunner {
             "PARALLEL四路采集",
             "parallel_fetch",
             List.of(
-                createParallelNode("parallel_fetch", "并行采集", List.of(
-                    Map.of("name", "基本信息", "nodeIds", List.of("basic_node")),
-                    Map.of("name", "行为数据", "nodeIds", List.of("behavior_node")),
-                    Map.of("name", "兴趣数据", "nodeIds", List.of("interest_node")),
-                    Map.of("name", "社交数据", "nodeIds", List.of("social_node"))
-                )),
+                createParallelNode("parallel_fetch", "并行采集",
+                    List.of(
+                        Map.of("name", "基本信息", "nodeIds", List.of("basic_node")),
+                        Map.of("name", "行为数据", "nodeIds", List.of("behavior_node")),
+                        Map.of("name", "兴趣数据", "nodeIds", List.of("interest_node")),
+                        Map.of("name", "社交数据", "nodeIds", List.of("social_node"))
+                    ),
+                    "merge"),
                 createDataNode("basic_node", "基本信息", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "basic", "expression", "'姓名: 张三'")),
+                    Map.of("outputKey", "basic", "expression", "'姓名: 张三'", "nextNodeId", "merge")),
                 createDataNode("behavior_node", "行为数据", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "behavior", "expression", "'月消费: 5000'")),
+                    Map.of("outputKey", "behavior", "expression", "'月消费: 5000'", "nextNodeId", "merge")),
                 createDataNode("interest_node", "兴趣数据", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "interest", "expression", "'运动、科技'")),
+                    Map.of("outputKey", "interest", "expression", "'运动、科技'", "nextNodeId", "merge")),
                 createDataNode("social_node", "社交数据", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "social", "expression", "'朋友圈活跃'")),
+                    Map.of("outputKey", "social", "expression", "'朋友圈活跃'", "nextNodeId", "merge")),
                 createDataNode("merge", "合并画像", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "profile", "expression", "'画像已生成'"))
             ),
             List.of(
-                createEdge("e1", "parallel_fetch", "basic_node"),
-                createEdge("e2", "parallel_fetch", "behavior_node"),
-                createEdge("e3", "parallel_fetch", "interest_node"),
-                createEdge("e4", "parallel_fetch", "social_node"),
-                createEdge("e5", "basic_node", "merge"),
-                createEdge("e6", "behavior_node", "merge"),
-                createEdge("e7", "interest_node", "merge"),
-                createEdge("e8", "social_node", "merge")
+                createEdge("e1", "parallel_fetch", "merge"),
+                createEdge("e2", "basic_node", "merge"),
+                createEdge("e3", "behavior_node", "merge"),
+                createEdge("e4", "interest_node", "merge"),
+                createEdge("e5", "social_node", "merge")
             )
         );
 
@@ -296,19 +315,25 @@ public class WorkflowDataInitializer implements CommandLineRunner {
             "get_devices",
             List.of(
                 createDataNode("get_devices", "获取设备", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "devices", "expression", "['设备A','设备B','设备C']", "nextNodeId", "foreach_device")),
-                createForeachNode("foreach_device", "遍历控制", "#input.devices", "device", 100),
-                createConditionNode("check_result", "结果检查", List.of(
-                    Map.of("expression", "#input.success == true", "nextNodeId", "next"),
-                    Map.of("expression", "#input.success == false", "nextNodeId", "retry")
-                )),
+                    Map.of("outputKey", "devices", "expression", "T(java.util.Arrays).asList('设备A','设备B','设备C')", "nextNodeId", "foreach_device")),
+                // FOREACH needs nextNodeId pointing to what comes after
+                createForeachNode("foreach_device", "遍历控制", "#input.devices", "device", 100, "check_result"),
+                createConditionNode("check_result", "结果检查",
+                    List.of(
+                        Map.of("expression", "#input.success == true", "nextNodeId", "next"),
+                        Map.of("expression", "#input.success == false", "nextNodeId", "retry")
+                    ),
+                    "next"),
                 createDataNode("next", "下一步", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "done", "expression", "'设备控制完成'"))
+                    Map.of("outputKey", "done", "expression", "'设备控制完成'")),
+                createDataNode("retry", "重试", NodeType.DATA_PROCESSING,
+                    Map.of("outputKey", "retry", "expression", "'重试设备控制'"))
             ),
             List.of(
                 createEdge("e1", "get_devices", "foreach_device"),
                 createEdge("e2", "foreach_device", "check_result"),
-                createEdge("e3", "check_result", "next")
+                createEdge("e3", "check_result", "next"),
+                createEdge("e4", "check_result", "retry")
             )
         );
 
@@ -320,18 +345,20 @@ public class WorkflowDataInitializer implements CommandLineRunner {
             List.of(
                 createDataNode("receive_alert", "接收告警", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "level", "expression", "2", "nextNodeId", "severity")),
-                createConditionNode("severity", "告警级别", List.of(
-                    Map.of("expression", "#input.level == 1", "nextNodeId", "notify_l1"),
-                    Map.of("expression", "#input.level == 2", "nextNodeId", "notify_l2"),
-                    Map.of("expression", "#input.level == 3", "nextNodeId", "notify_l3")
-                )),
+                createConditionNode("severity", "告警级别",
+                    List.of(
+                        Map.of("expression", "#input.level == 1", "nextNodeId", "notify_l1"),
+                        Map.of("expression", "#input.level == 2", "nextNodeId", "notify_l2"),
+                        Map.of("expression", "#input.level == 3", "nextNodeId", "notify_l3")
+                    ),
+                    "complete"),
                 createDataNode("notify_l1", "L1通知", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "result", "expression", "'L1通知已发送'")),
+                    Map.of("outputKey", "result", "expression", "'L1通知已发送'", "nextNodeId", "handle")),
                 createDataNode("notify_l2", "L2通知", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "result", "expression", "'L2通知已发送'")),
+                    Map.of("outputKey", "result", "expression", "'L2通知已发送'", "nextNodeId", "handle")),
                 createDataNode("notify_l3", "L3紧急", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "result", "expression", "'L3紧急通知已发送'")),
-                createSubworkflowNode("handle", "自动处理", "auto-handle-wf"),
+                    Map.of("outputKey", "result", "expression", "'L3紧急通知已发送'", "nextNodeId", "handle")),
+                createSubworkflowNode("handle", "自动处理", "auto-handle-wf", "complete"),
                 createDataNode("complete", "完成", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "done", "expression", "'告警处理完成'"))
             ),
@@ -358,10 +385,12 @@ public class WorkflowDataInitializer implements CommandLineRunner {
                     Map.of("outputKey", "formData", "expression", "'表单数据'", "nextNodeId", "validate")),
                 createDataNode("validate", "表单验证", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "formType", "expression", "'A'", "nextNodeId", "route")),
-                createConditionNode("route", "业务分流", List.of(
-                    Map.of("expression", "#input.formType == 'A'", "nextNodeId", "handle_a"),
-                    Map.of("expression", "#input.formType == 'B'", "nextNodeId", "handle_b")
-                )),
+                createConditionNode("route", "业务分流",
+                    List.of(
+                        Map.of("expression", "#input.formType == 'A'", "nextNodeId", "handle_a"),
+                        Map.of("expression", "#input.formType == 'B'", "nextNodeId", "handle_b")
+                    ),
+                    "handle_other"),
                 createDataNode("handle_a", "业务A处理", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "result", "expression", "'业务A处理完成'")),
                 createDataNode("handle_b", "业务B处理", NodeType.DATA_PROCESSING,
@@ -388,15 +417,17 @@ public class WorkflowDataInitializer implements CommandLineRunner {
                     Map.of("outputKey", "complaint", "expression", "'用户投诉内容'", "nextNodeId", "classify")),
                 createDataNode("classify", "LLM分类", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "urgent", "expression", "true", "nextNodeId", "urgency")),
-                createConditionNode("urgency", "紧急程度", List.of(
-                    Map.of("expression", "#input.urgent == true", "nextNodeId", "dispatch_urgent"),
-                    Map.of("expression", "#input.urgent == false", "nextNodeId", "dispatch_normal")
-                )),
+                createConditionNode("urgency", "紧急程度",
+                    List.of(
+                        Map.of("expression", "#input.urgent == true", "nextNodeId", "dispatch_urgent"),
+                        Map.of("expression", "#input.urgent == false", "nextNodeId", "dispatch_normal")
+                    ),
+                    "track"),
                 createDataNode("dispatch_urgent", "紧急派发", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "result", "expression", "'紧急派发'")),
+                    Map.of("outputKey", "result", "expression", "'紧急派发'", "nextNodeId", "track")),
                 createDataNode("dispatch_normal", "普通派发", NodeType.DATA_PROCESSING,
-                    Map.of("outputKey", "result", "expression", "'普通派发'")),
-                createSubworkflowNode("track", "进度跟踪", "complaint-track-wf"),
+                    Map.of("outputKey", "result", "expression", "'普通派发'", "nextNodeId", "track")),
+                createSubworkflowNode("track", "进度跟踪", "complaint-track-wf", "complete"),
                 createDataNode("complete", "完成", NodeType.DATA_PROCESSING,
                     Map.of("outputKey", "done", "expression", "'投诉处理完成'"))
             ),
@@ -440,14 +471,25 @@ public class WorkflowDataInitializer implements CommandLineRunner {
             .build();
     }
 
-    private Node createConditionNode(String id, String name, List<Map<String, String>> conditions) {
+    private Node createLlmNode(String id, String name, Map<String, Object> config) {
+        return Node.builder()
+            .id(id)
+            .name(name)
+            .type(NodeType.LLM_CALL)
+            .config(new HashMap<>(config))
+            .inputMapping(new HashMap<>())
+            .outputMapping(new HashMap<>())
+            .build();
+    }
+
+    private Node createConditionNode(String id, String name, List<Map<String, String>> conditions, String defaultNextNodeId) {
         List<Map<String, Object>> conditionMaps = new ArrayList<>();
         for (Map<String, String> cond : conditions) {
             conditionMaps.add(new HashMap<>(cond));
         }
         Map<String, Object> config = new HashMap<>();
         config.put("conditions", conditionMaps);
-        config.put("defaultNextNodeId", "end");
+        config.put("defaultNextNodeId", defaultNextNodeId);
         return Node.builder()
             .id(id)
             .name(name)
@@ -458,13 +500,14 @@ public class WorkflowDataInitializer implements CommandLineRunner {
             .build();
     }
 
-    private Node createBranchNode(String id, String name, List<Map<String, String>> branches) {
+    private Node createBranchNode(String id, String name, List<Map<String, String>> branches, String defaultNextNodeId) {
         List<Map<String, Object>> branchMaps = new ArrayList<>();
         for (Map<String, String> branch : branches) {
             branchMaps.add(new HashMap<>(branch));
         }
         Map<String, Object> config = new HashMap<>();
         config.put("branches", branchMaps);
+        config.put("defaultNextNodeId", defaultNextNodeId);
         return Node.builder()
             .id(id)
             .name(name)
@@ -475,11 +518,11 @@ public class WorkflowDataInitializer implements CommandLineRunner {
             .build();
     }
 
-    private Node createParallelNode(String id, String name, List<Map<String, Object>> branches) {
+    private Node createParallelNode(String id, String name, List<Map<String, Object>> branches, String nextNodeId) {
         Map<String, Object> config = new HashMap<>();
         config.put("branches", branches);
         config.put("strategy", "AND");
-        config.put("nextNodeId", null);
+        config.put("nextNodeId", nextNodeId);
         return Node.builder()
             .id(id)
             .name(name)
@@ -490,11 +533,12 @@ public class WorkflowDataInitializer implements CommandLineRunner {
             .build();
     }
 
-    private Node createForeachNode(String id, String name, String collection, String variableName, int maxIterations) {
+    private Node createForeachNode(String id, String name, String collection, String variableName, int maxIterations, String nextNodeId) {
         Map<String, Object> config = new HashMap<>();
         config.put("collection", collection);
         config.put("variableName", variableName);
         config.put("maxIterations", maxIterations);
+        config.put("nextNodeId", nextNodeId);
         return Node.builder()
             .id(id)
             .name(name)
@@ -505,10 +549,10 @@ public class WorkflowDataInitializer implements CommandLineRunner {
             .build();
     }
 
-    private Node createSubworkflowNode(String id, String name, String workflowId) {
+    private Node createSubworkflowNode(String id, String name, String workflowId, String nextNodeId) {
         Map<String, Object> config = new HashMap<>();
         config.put("workflowId", workflowId);
-        config.put("nextNodeId", null);
+        config.put("nextNodeId", nextNodeId);
         return Node.builder()
             .id(id)
             .name(name)
