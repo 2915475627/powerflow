@@ -17,7 +17,7 @@ import {
   Position,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useCreateWorkflow, useWorkflow } from '../hooks/useWorkflow';
+import { useCreateWorkflow, useWorkflow, useWorkflows } from '../hooks/useWorkflow';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Workflow, WorkflowNode, WorkflowEdge } from '../types/workflow';
 
@@ -190,6 +190,7 @@ export function WorkflowEditorPage() {
   const workflowId = searchParams.get('id');
   const navigate = useNavigate();
   const { data: existingWorkflow } = useWorkflow(workflowId || '');
+  const { data: workflows } = useWorkflows();
   const createWorkflow = useCreateWorkflow();
 
   const [nodes, setNodes, onNodesChange] = useNodesState(defaultNodes);
@@ -197,6 +198,7 @@ export function WorkflowEditorPage() {
   const [workflowName, setWorkflowName] = useState('新工作流');
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [nodeConfig, setNodeConfig] = useState<Record<string, any>>({});
+  const [saveWarning, setSaveWarning] = useState<string | null>(null);
 
   // Load existing workflow if editing
   useMemo(() => {
@@ -299,6 +301,16 @@ export function WorkflowEditorPage() {
   };
 
   const saveWorkflow = async () => {
+    // Check for duplicate workflow name (exclude current workflow if editing)
+    const isDuplicate = workflows?.some(w =>
+      w.name === workflowName && w.id !== workflowId
+    );
+
+    if (isDuplicate) {
+      setSaveWarning(`工作流名称 "${workflowName}" 已存在，请使用其他名称`);
+      return;
+    }
+
     const workflowNodes: Record<string, WorkflowNode> = {};
     nodes.forEach((node) => {
       workflowNodes[node.id] = {
@@ -350,10 +362,13 @@ export function WorkflowEditorPage() {
           <input
             type="text"
             value={workflowName}
-            onChange={(e) => setWorkflowName(e.target.value)}
+            onChange={(e) => { setWorkflowName(e.target.value); setSaveWarning(null); }}
             className="text-xl font-bold border-b-2 border-indigo-500 bg-transparent px-2 py-1 focus:outline-none"
             placeholder="工作流名称"
           />
+          {saveWarning && (
+            <span className="text-sm text-amber-600">{saveWarning}</span>
+          )}
         </div>
         <div className="flex items-center space-x-2">
           <button
