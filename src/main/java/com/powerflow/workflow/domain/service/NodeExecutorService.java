@@ -15,15 +15,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
-public class NodeExecutorService {
+public class NodeExecutorService implements NodeExecutorPort {
 
     private final ExpressionParser parser = new SpelExpressionParser();
     private static final Pattern MAP_ACCESSOR_PATTERN = Pattern.compile("(#input)\\.([a-zA-Z_][a-zA-Z0-9_]*)");
 
-    public NodeExecutorService(NodeExecutorPort port) {
-        // port can be used for future extensions
+    public NodeExecutorService() {
     }
 
+    @Override
     public NodeResult execute(Node node, Context context) {
         return switch (node.getType()) {
             case DATA_PROCESSING -> executeDataProcessing(node, context);

@@ -24,7 +24,7 @@ class WorkflowExecutionIntegrationTest {
         workflowRepository = new InMemoryWorkflowRepository();
         logRepository = new InMemoryExecutionLogRepository();
         ContextManager contextManager = new ContextManager();
-        NodeExecutorService nodeExecutor = new NodeExecutorService(null);
+        NodeExecutorService nodeExecutor = new NodeExecutorService();
         workflowExecutor = new WorkflowExecutor(workflowRepository, logRepository, contextManager, nodeExecutor);
     }
 

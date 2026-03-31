@@ -1,5 +1,9 @@
 package com.powerflow.workflow.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,16 +18,35 @@ public class Workflow {
     private final List<Edge> edges;
     private final String startNodeId;
 
-    public Workflow(String id, String name, String description,
-                    List<Node> nodes, List<Edge> edges, String startNodeId) {
+    @JsonCreator
+    public Workflow(
+            @JsonProperty("id") String id,
+            @JsonProperty("name") String name,
+            @JsonProperty("description") String description,
+            @JsonProperty("nodes") Map<String, Node> nodeMap,
+            @JsonProperty("edges") List<Edge> edges,
+            @JsonProperty("startNodeId") String startNodeId) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.nodes = nodeMap != null ? new HashMap<>(nodeMap) : new HashMap<>();
+        this.edges = edges != null ? new ArrayList<>(edges) : new ArrayList<>();
+        this.startNodeId = startNodeId;
+    }
+
+    // Legacy constructor for Builder pattern
+    protected Workflow(String id, String name, String description,
+                       List<Node> nodesList, List<Edge> edges, String startNodeId) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.nodes = new HashMap<>();
-        for (Node node : nodes) {
-            this.nodes.put(node.getId(), node);
+        if (nodesList != null) {
+            for (Node node : nodesList) {
+                this.nodes.put(node.getId(), node);
+            }
         }
-        this.edges = new ArrayList<>(edges);
+        this.edges = edges != null ? new ArrayList<>(edges) : new ArrayList<>();
         this.startNodeId = startNodeId;
     }
 

@@ -1,10 +1,14 @@
 package com.powerflow.workflow.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 public class Context {
+    @JsonProperty("data")
     private final Map<String, Object> data;
 
     public Context() {
@@ -23,6 +27,7 @@ public class Context {
         return Optional.ofNullable(data.get(key));
     }
 
+    @JsonIgnore
     public Map<String, Object> toMap() {
         return new HashMap<>(data);
     }

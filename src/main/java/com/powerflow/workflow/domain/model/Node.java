@@ -1,5 +1,7 @@
 package com.powerflow.workflow.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.powerflow.workflow.domain.model.enums.NodeType;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,16 +14,34 @@ public class Node {
     private final Map<String, String> inputMapping;
     private final Map<String, String> outputMapping;
 
-    public Node(String id, String name, NodeType type,
-                Map<String, Object> config,
-                Map<String, String> inputMapping,
-                Map<String, String> outputMapping) {
+    @JsonCreator
+    public Node(
+            @JsonProperty("id") String id,
+            @JsonProperty("name") String name,
+            @JsonProperty("type") NodeType type,
+            @JsonProperty("config") Map<String, Object> config,
+            @JsonProperty("inputMapping") Map<String, String> inputMapping,
+            @JsonProperty("outputMapping") Map<String, String> outputMapping) {
         this.id = id;
         this.name = name;
         this.type = type;
-        this.config = new HashMap<>(config);
-        this.inputMapping = new HashMap<>(inputMapping);
-        this.outputMapping = new HashMap<>(outputMapping);
+        this.config = config != null ? new HashMap<>(config) : new HashMap<>();
+        this.inputMapping = inputMapping != null ? new HashMap<>(inputMapping) : new HashMap<>();
+        this.outputMapping = outputMapping != null ? new HashMap<>(outputMapping) : new HashMap<>();
+    }
+
+    // For Builder pattern
+    protected Node(String id, String name, NodeType type,
+                   Map<String, Object> config,
+                   Map<String, String> inputMapping,
+                   Map<String, String> outputMapping,
+                   boolean useBuilder) {
+        this.id = id;
+        this.name = name;
+        this.type = type;
+        this.config = config != null ? new HashMap<>(config) : new HashMap<>();
+        this.inputMapping = inputMapping != null ? new HashMap<>(inputMapping) : new HashMap<>();
+        this.outputMapping = outputMapping != null ? new HashMap<>(outputMapping) : new HashMap<>();
     }
 
     public String getId() { return id; }
@@ -47,6 +67,6 @@ public class Node {
         public Builder config(Map<String, Object> config) { this.config = config; return this; }
         public Builder inputMapping(Map<String, String> inputMapping) { this.inputMapping = inputMapping; return this; }
         public Builder outputMapping(Map<String, String> outputMapping) { this.outputMapping = outputMapping; return this; }
-        public Node build() { return new Node(id, name, type, config, inputMapping, outputMapping); }
+        public Node build() { return new Node(id, name, type, config, inputMapping, outputMapping, true); }
     }
 }

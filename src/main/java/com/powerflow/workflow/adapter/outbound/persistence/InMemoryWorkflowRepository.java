@@ -3,9 +3,11 @@ package com.powerflow.workflow.adapter.outbound.persistence;
 import com.powerflow.workflow.domain.model.Workflow;
 import com.powerflow.workflow.domain.port.outbound.WorkflowRepository;
 import org.springframework.stereotype.Repository;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Repository
 public class InMemoryWorkflowRepository implements WorkflowRepository {
@@ -15,6 +17,11 @@ public class InMemoryWorkflowRepository implements WorkflowRepository {
     @Override
     public Optional<Workflow> findById(String id) {
         return Optional.ofNullable(store.get(id));
+    }
+
+    @Override
+    public List<Workflow> findAll() {
+        return store.values().stream().collect(Collectors.toList());
     }
 
     @Override

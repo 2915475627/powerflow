@@ -42,7 +42,7 @@ class WorkflowExecutorTest {
         when(repo.findById("wf-1")).thenReturn(Optional.of(workflow));
 
         ContextManager contextManager = new ContextManager();
-        NodeExecutorService nodeExecutor = new NodeExecutorService(null);
+        NodeExecutorService nodeExecutor = new NodeExecutorService();
         WorkflowExecutor executor = new WorkflowExecutor(repo, logRepo, contextManager, nodeExecutor);
 
         Context inputContext = new Context(Map.of("amount", 500));
@@ -60,7 +60,7 @@ class WorkflowExecutorTest {
         when(repo.findById("non-existent")).thenReturn(Optional.empty());
 
         ContextManager contextManager = new ContextManager();
-        NodeExecutorService nodeExecutor = new NodeExecutorService(null);
+        NodeExecutorService nodeExecutor = new NodeExecutorService();
         WorkflowExecutor executor = new WorkflowExecutor(repo, logRepo, contextManager, nodeExecutor);
 
         Context ctx = new Context();

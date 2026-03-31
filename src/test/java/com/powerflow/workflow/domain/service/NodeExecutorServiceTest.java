@@ -11,7 +11,7 @@ class NodeExecutorServiceTest {
 
     @Test
     void should_execute_data_processing_node() {
-        NodeExecutorService executor = new NodeExecutorService(null);
+        NodeExecutorService executor = new NodeExecutorService();
         Context ctx = new Context(Map.of("amount", 1000));
 
         Node node = Node.builder()
@@ -28,7 +28,7 @@ class NodeExecutorServiceTest {
 
     @Test
     void should_execute_condition_node_and_return_next_node() {
-        NodeExecutorService executor = new NodeExecutorService(null);
+        NodeExecutorService executor = new NodeExecutorService();
         Context ctx = new Context(Map.of("amount", 1500));
 
         Node conditionNode = Node.builder()

@@ -8,6 +8,8 @@ import com.powerflow.workflow.domain.service.NodeExecutorService;
 import com.powerflow.workflow.domain.service.WorkflowExecutor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/workflows")
 public class WorkflowController implements WorkflowUseCase {
@@ -53,5 +55,10 @@ public class WorkflowController implements WorkflowUseCase {
     public Workflow getWorkflow(@PathVariable String workflowId) {
         return workflowRepository.findById(workflowId)
             .orElseThrow(() -> new RuntimeException("Workflow not found: " + workflowId));
+    }
+
+    @GetMapping
+    public List<Workflow> listWorkflows() {
+        return workflowRepository.findAll();
     }
 }

@@ -71,7 +71,7 @@ public class WorkflowExecutor {
             executions.add(execution);
 
             if (!result.isSuccess()) {
-                return WorkflowExecutionResult.builder()
+                WorkflowExecutionResult failedResult = WorkflowExecutionResult.builder()
                     .workflowId(workflow.getId())
                     .executionId(executionId)
                     .status(ExecutionStatus.FAILED)
@@ -79,6 +79,8 @@ public class WorkflowExecutor {
                     .nodeExecutions(executions)
                     .error("Node " + node.getId() + " failed: " + result.getError().orElse("Unknown error"))
                     .build();
+                executionLogRepository.saveExecutionResult(failedResult);
+                return failedResult;
             }
 
             contextManager.writeNodeOutput(node.getOutputMapping(), result.getOutput(), currentContext);
@@ -88,12 +90,14 @@ public class WorkflowExecutor {
             currentNodeId = nextNodeId;
         }
 
-        return WorkflowExecutionResult.builder()
+        WorkflowExecutionResult successResult = WorkflowExecutionResult.builder()
             .workflowId(workflow.getId())
             .executionId(executionId)
             .status(ExecutionStatus.SUCCESS)
             .finalContext(currentContext)
             .nodeExecutions(executions)
             .build();
+        executionLogRepository.saveExecutionResult(successResult);
+        return successResult;
     }
 }

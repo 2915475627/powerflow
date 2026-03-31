@@ -1,6 +1,7 @@
 package com.powerflow.workflow.adapter.outbound.logging;
 
 import com.powerflow.workflow.domain.model.NodeExecution;
+import com.powerflow.workflow.domain.model.WorkflowExecutionResult;
 import com.powerflow.workflow.domain.port.outbound.ExecutionLogRepository;
 import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class InMemoryExecutionLogRepository implements ExecutionLogRepository {
 
     private final Map<String, List<NodeExecution>> store = new ConcurrentHashMap<>();
+    private final Map<String, List<WorkflowExecutionResult>> executionResults = new ConcurrentHashMap<>();
 
     @Override
     public void save(NodeExecution execution) {
@@ -22,5 +24,16 @@ public class InMemoryExecutionLogRepository implements ExecutionLogRepository {
     @Override
     public List<NodeExecution> findByWorkflowExecutionId(String workflowExecutionId) {
         return new ArrayList<>(store.getOrDefault(workflowExecutionId, List.of()));
+    }
+
+    @Override
+    public void saveExecutionResult(WorkflowExecutionResult result) {
+        executionResults.computeIfAbsent(result.getWorkflowId(), k -> new ArrayList<>())
+                        .add(0, result);
+    }
+
+    @Override
+    public List<WorkflowExecutionResult> findByWorkflowId(String workflowId) {
+        return new ArrayList<>(executionResults.getOrDefault(workflowId, List.of()));
     }
 }
