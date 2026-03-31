@@ -17,6 +17,7 @@ public class Workflow {
     private final Map<String, Node> nodes;
     private final List<Edge> edges;
     private final String startNodeId;
+    private final boolean enabled;
 
     @JsonCreator
     public Workflow(
@@ -25,18 +26,21 @@ public class Workflow {
             @JsonProperty("description") String description,
             @JsonProperty("nodes") Map<String, Node> nodeMap,
             @JsonProperty("edges") List<Edge> edges,
-            @JsonProperty("startNodeId") String startNodeId) {
+            @JsonProperty("startNodeId") String startNodeId,
+            @JsonProperty("enabled") Boolean enabled) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.nodes = nodeMap != null ? new HashMap<>(nodeMap) : new HashMap<>();
         this.edges = edges != null ? new ArrayList<>(edges) : new ArrayList<>();
         this.startNodeId = startNodeId;
+        this.enabled = enabled != null ? enabled : false;
     }
 
     // Legacy constructor for Builder pattern
     protected Workflow(String id, String name, String description,
-                       List<Node> nodesList, List<Edge> edges, String startNodeId) {
+                       List<Node> nodesList, List<Edge> edges, String startNodeId,
+                       boolean enabled) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -48,6 +52,7 @@ public class Workflow {
         }
         this.edges = edges != null ? new ArrayList<>(edges) : new ArrayList<>();
         this.startNodeId = startNodeId;
+        this.enabled = enabled;
     }
 
     public String getId() { return id; }
@@ -56,6 +61,7 @@ public class Workflow {
     public Map<String, Node> getNodes() { return new HashMap<>(nodes); }
     public List<Edge> getEdges() { return new ArrayList<>(edges); }
     public String getStartNodeId() { return startNodeId; }
+    public boolean isEnabled() { return enabled; }
 
     public Optional<Node> findNodeById(String nodeId) {
         return Optional.ofNullable(nodes.get(nodeId));
@@ -76,6 +82,7 @@ public class Workflow {
         private List<Node> nodes = new ArrayList<>();
         private List<Edge> edges = new ArrayList<>();
         private String startNodeId;
+        private boolean enabled;
 
         public Builder id(String id) { this.id = id; return this; }
         public Builder name(String name) { this.name = name; return this; }
@@ -83,6 +90,7 @@ public class Workflow {
         public Builder nodes(List<Node> nodes) { this.nodes = nodes; return this; }
         public Builder edges(List<Edge> edges) { this.edges = edges; return this; }
         public Builder startNodeId(String startNodeId) { this.startNodeId = startNodeId; return this; }
-        public Workflow build() { return new Workflow(id, name, description, nodes, edges, startNodeId); }
+        public Builder enabled(boolean enabled) { this.enabled = enabled; return this; }
+        public Workflow build() { return new Workflow(id, name, description, nodes, edges, startNodeId, enabled); }
     }
 }
