@@ -346,4 +346,357 @@ class EcommerceBusinessScenariosTest {
             assertThat(result.getNodeExecutions()).hasSize(7);
         }
     }
+
+    @Nested
+    @DisplayName("Scenario 4: Smart Customer Service Routing (智能客服路由)")
+    class SmartCustomerServiceRoutingScenario {
+
+        @Test
+        @DisplayName("Should route to correct department based on LLM intent")
+        void should_route_based_on_intent() {
+            // DATA_PROCESSING node simulates LLM returning intent=search
+            Node intentNode = Node.builder()
+                .id("intent")
+                .name("Intent Recognition")
+                .type(NodeType.DATA_PROCESSING)
+                .config(Map.of(
+                    "outputKey", "intent",
+                    "expression", "'search'",
+                    "nextNodeId", "route"
+                ))
+                .inputMapping(Map.of())
+                .outputMapping(Map.of("intent", "intent"))
+                .build();
+
+            // BRANCH node routes based on LLM output
+            Node branchNode = Node.builder()
+                .id("route")
+                .name("Route")
+                .type(NodeType.BRANCH)
+                .config(Map.of("branches", List.of(
+                    Map.of("name", "search", "expression", "#input.intent == 'search'", "nextNodeId", "search_node"),
+                    Map.of("name", "recommend", "expression", "#input.intent == 'recommend'", "nextNodeId", "recommend_node"),
+                    Map.of("name", "inquiry", "expression", "#input.intent == 'inquiry'", "nextNodeId", "inquiry_node"),
+                    Map.of("name", "order", "expression", "#input.intent == 'order'", "nextNodeId", "order_node")
+                )))
+                .inputMapping(Map.of("intent", "intent"))
+                .outputMapping(Map.of())
+                .build();
+
+            // Route target nodes
+            Node searchNode = Node.builder()
+                .id("search_node")
+                .type(NodeType.DATA_PROCESSING)
+                .config(Map.of("outputKey", "result", "expression", "'搜索结果'", "nextNodeId", "format"))
+                .inputMapping(Map.of())
+                .outputMapping(Map.of("result", "routeResult"))
+                .build();
+
+            Node recommendNode = Node.builder()
+                .id("recommend_node")
+                .type(NodeType.DATA_PROCESSING)
+                .config(Map.of("outputKey", "result", "expression", "'推荐结果'", "nextNodeId", "format"))
+                .inputMapping(Map.of())
+                .outputMapping(Map.of("result", "routeResult"))
+                .build();
+
+            Node inquiryNode = Node.builder()
+                .id("inquiry_node")
+                .type(NodeType.DATA_PROCESSING)
+                .config(Map.of("outputKey", "result", "expression", "'咨询结果'", "nextNodeId", "format"))
+                .inputMapping(Map.of())
+                .outputMapping(Map.of("result", "routeResult"))
+                .build();
+
+            Node orderNode = Node.builder()
+                .id("order_node")
+                .type(NodeType.DATA_PROCESSING)
+                .config(Map.of("outputKey", "result", "expression", "'订单结果'", "nextNodeId", "format"))
+                .inputMapping(Map.of())
+                .outputMapping(Map.of("result", "routeResult"))
+                .build();
+
+            Node formatNode = Node.builder()
+                .id("format")
+                .type(NodeType.DATA_PROCESSING)
+                .config(Map.of("outputKey", "final", "expression", "'路由到: ' + #input.intent"))
+                .inputMapping(Map.of("intent", "intent"))
+                .outputMapping(Map.of("final", "output.final"))
+                .build();
+
+            Workflow workflow = Workflow.builder()
+                .id("customer-service-wf")
+                .name("Customer Service Routing")
+                .startNodeId("intent")
+                .nodes(List.of(intentNode, branchNode, searchNode, recommendNode, inquiryNode, orderNode, formatNode))
+                .edges(List.of(
+                    Edge.builder().id("e1").fromNodeId("intent").toNodeId("route").build(),
+                    Edge.builder().id("e2").fromNodeId("route").toNodeId("search_node").build(),
+                    Edge.builder().id("e3").fromNodeId("route").toNodeId("recommend_node").build(),
+                    Edge.builder().id("e4").fromNodeId("route").toNodeId("inquiry_node").build(),
+                    Edge.builder().id("e5").fromNodeId("route").toNodeId("order_node").build(),
+                    Edge.builder().id("e6").fromNodeId("search_node").toNodeId("format").build(),
+                    Edge.builder().id("e7").fromNodeId("recommend_node").toNodeId("format").build(),
+                    Edge.builder().id("e8").fromNodeId("inquiry_node").toNodeId("format").build(),
+                    Edge.builder().id("e9").fromNodeId("order_node").toNodeId("format").build()
+                ))
+                .build();
+
+            workflowRepository.save(workflow);
+            Context inputContext = new Context(Map.of("query", "想买Nike鞋"));
+            WorkflowExecutionResult result = workflowExecutor.execute("customer-service-wf", inputContext);
+
+            assertThat(result.isSuccess()).isTrue();
+            assertThat(result.getNodeExecutions()).isNotEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("Scenario 5: Parallel Recommendation (并行推荐)")
+    class ParallelRecommendationScenario {
+
+        @Test
+        @DisplayName("Should fetch user profile and behaviors in parallel")
+        void should_fetch_parallel() {
+            Map<String, Object> parallelConfig = new HashMap<>();
+            parallelConfig.put("branches", List.of(
+                Map.of("name", "profile", "nodeIds", List.of("profile_node")),
+                Map.of("name", "behaviors", "nodeIds", List.of("behaviors_node"))
+            ));
+            parallelConfig.put("strategy", "AND");
+            parallelConfig.put("nextNodeId", "merge");
+
+            Node parallelNode = Node.builder()
+                .id("parallel")
+                .name("Parallel Fetch")
+                .type(NodeType.PARALLEL)
+                .config(parallelConfig)
+                .inputMapping(Map.of())
+                .outputMapping(Map.of("branchResults", "parallelResults"))
+                .build();
+
+            Map<String, Object> profileConfig = new HashMap<>();
+            profileConfig.put("outputKey", "profile");
+            profileConfig.put("expression", "'用户画像数据'");
+            profileConfig.put("nextNodeId", null);
+
+            Node profileNode = Node.builder()
+                .id("profile_node")
+                .type(NodeType.DATA_PROCESSING)
+                .config(profileConfig)
+                .inputMapping(Map.of())
+                .outputMapping(Map.of("profile", "profile"))
+                .build();
+
+            Map<String, Object> behaviorsConfig = new HashMap<>();
+            behaviorsConfig.put("outputKey", "behaviors");
+            behaviorsConfig.put("expression", "'行为历史数据'");
+            behaviorsConfig.put("nextNodeId", null);
+
+            Node behaviorsNode = Node.builder()
+                .id("behaviors_node")
+                .type(NodeType.DATA_PROCESSING)
+                .config(behaviorsConfig)
+                .inputMapping(Map.of())
+                .outputMapping(Map.of("behaviors", "behaviors"))
+                .build();
+
+            Node mergeNode = Node.builder()
+                .id("merge")
+                .type(NodeType.DATA_PROCESSING)
+                .config(Map.of("outputKey", "merged", "expression", "'已合并: ' + #input.profile + ' + ' + #input.behaviors"))
+                .inputMapping(Map.of("profile", "profile", "behaviors", "behaviors"))
+                .outputMapping(Map.of("merged", "output.merged"))
+                .build();
+
+            Workflow workflow = Workflow.builder()
+                .id("parallel-recommend-wf")
+                .name("Parallel Recommend")
+                .startNodeId("parallel")
+                .nodes(List.of(parallelNode, profileNode, behaviorsNode, mergeNode))
+                .edges(List.of(
+                    Edge.builder().id("e1").fromNodeId("parallel").toNodeId("profile_node").build(),
+                    Edge.builder().id("e2").fromNodeId("parallel").toNodeId("behaviors_node").build(),
+                    Edge.builder().id("e3").fromNodeId("profile_node").toNodeId("merge").build(),
+                    Edge.builder().id("e4").fromNodeId("behaviors_node").toNodeId("merge").build()
+                ))
+                .build();
+
+            workflowRepository.save(workflow);
+            Context inputContext = new Context(Map.of());
+            WorkflowExecutionResult result = workflowExecutor.execute("parallel-recommend-wf", inputContext);
+
+            assertThat(result.isSuccess()).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("Scenario 6: Foreach Batch Processing (FOREACH批量处理)")
+    class ForeachBatchProcessingScenario {
+
+        @Test
+        @DisplayName("Should iterate over product list with foreach")
+        void should_iterate_products() {
+            Node foreachNode = Node.builder()
+                .id("foreach")
+                .name("Process Products")
+                .type(NodeType.FOREACH)
+                .config(Map.of(
+                    "collection", "#input.products",
+                    "variableName", "product",
+                    "maxIterations", 100,
+                    "nextNodeId", "aggregate"
+                ))
+                .inputMapping(Map.of("products", "input.products"))
+                .outputMapping(Map.of("results", "processed"))
+                .build();
+
+            Node aggregateNode = Node.builder()
+                .id("aggregate")
+                .type(NodeType.DATA_PROCESSING)
+                .config(Map.of("outputKey", "count", "expression", "#input.totalIterations"))
+                .inputMapping(Map.of("totalIterations", "processed.totalIterations"))
+                .outputMapping(Map.of("count", "output.count"))
+                .build();
+
+            Workflow workflow = Workflow.builder()
+                .id("foreach-products-wf")
+                .name("Foreach Products")
+                .startNodeId("foreach")
+                .nodes(List.of(foreachNode, aggregateNode))
+                .edges(List.of(Edge.builder().id("e1").fromNodeId("foreach").toNodeId("aggregate").build()))
+                .build();
+
+            workflowRepository.save(workflow);
+            Context inputContext = new Context(Map.of("products", List.of("产品A", "产品B", "产品C")));
+            WorkflowExecutionResult result = workflowExecutor.execute("foreach-products-wf", inputContext);
+
+            assertThat(result.isSuccess()).isTrue();
+            assertThat(result.getNodeExecutions()).isNotEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("Scenario 7: Try-Catch Exception Handling (TRY_CATCH异常处理)")
+    class TryCatchExceptionHandlingScenario {
+
+        @Test
+        @DisplayName("Should catch exception in try-catch")
+        void should_catch_exception() {
+            Node tryCatchNode = Node.builder()
+                .id("try_catch")
+                .name("Try Create Order")
+                .type(NodeType.TRY_CATCH)
+                .config(Map.of(
+                    "tryNodeId", "risky_operation",
+                    "catchNodeId", "handle_error",
+                    "nextNodeId", "notify"
+                ))
+                .inputMapping(Map.of())
+                .outputMapping(Map.of("caught", "error.caught"))
+                .build();
+
+            Node riskyOp = Node.builder()
+                .id("risky_operation")
+                .type(NodeType.DATA_PROCESSING)
+                .config(Map.of("outputKey", "result", "expression", "1/0"))
+                .inputMapping(Map.of())
+                .outputMapping(Map.of())
+                .build();
+
+            Node handleError = Node.builder()
+                .id("handle_error")
+                .type(NodeType.DATA_PROCESSING)
+                .config(Map.of("outputKey", "errorMsg", "expression", "'已捕获异常'", "nextNodeId", "notify"))
+                .inputMapping(Map.of())
+                .outputMapping(Map.of("errorMsg", "errorMsg"))
+                .build();
+
+            Node notify = Node.builder()
+                .id("notify")
+                .type(NodeType.DATA_PROCESSING)
+                .config(Map.of("outputKey", "done", "expression", "'完成'"))
+                .inputMapping(Map.of())
+                .outputMapping(Map.of("done", "output.done"))
+                .build();
+
+            Workflow workflow = Workflow.builder()
+                .id("try-catch-wf")
+                .name("Try Catch Workflow")
+                .startNodeId("try_catch")
+                .nodes(List.of(tryCatchNode, riskyOp, handleError, notify))
+                .edges(List.of(
+                    Edge.builder().id("e1").fromNodeId("try_catch").toNodeId("risky_operation").build(),
+                    Edge.builder().id("e2").fromNodeId("risky_operation").toNodeId("handle_error").build(),
+                    Edge.builder().id("e3").fromNodeId("handle_error").toNodeId("notify").build()
+                ))
+                .build();
+
+            workflowRepository.save(workflow);
+            Context inputContext = new Context(Map.of());
+            WorkflowExecutionResult result = workflowExecutor.execute("try-catch-wf", inputContext);
+
+            assertThat(result.isSuccess()).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("Scenario 8: Retry Mechanism (RETRY重试机制)")
+    class RetryMechanismScenario {
+
+        @Test
+        @DisplayName("Should retry failed operation")
+        void should_retry_operation() {
+            Node retryNode = Node.builder()
+                .id("retry")
+                .name("Retry Operation")
+                .type(NodeType.RETRY)
+                .config(Map.of(
+                    "maxAttempts", 3,
+                    "retryNodeId", "unstable_operation",
+                    "nextNodeId", "success"
+                ))
+                .inputMapping(Map.of())
+                .outputMapping(Map.of("attempts", "retry.attempts"))
+                .build();
+
+            Map<String, Object> unstableConfig = new HashMap<>();
+            unstableConfig.put("outputKey", "result");
+            unstableConfig.put("expression", "'操作成功'");
+            unstableConfig.put("nextNodeId", null);
+
+            Node unstableOp = Node.builder()
+                .id("unstable_operation")
+                .type(NodeType.DATA_PROCESSING)
+                .config(unstableConfig)
+                .inputMapping(Map.of())
+                .outputMapping(Map.of("result", "result"))
+                .build();
+
+            Node success = Node.builder()
+                .id("success")
+                .type(NodeType.DATA_PROCESSING)
+                .config(Map.of("outputKey", "done", "expression", "'完成'"))
+                .inputMapping(Map.of())
+                .outputMapping(Map.of("done", "output.done"))
+                .build();
+
+            Workflow workflow = Workflow.builder()
+                .id("retry-wf")
+                .name("Retry Workflow")
+                .startNodeId("retry")
+                .nodes(List.of(retryNode, unstableOp, success))
+                .edges(List.of(
+                    Edge.builder().id("e1").fromNodeId("retry").toNodeId("unstable_operation").build(),
+                    Edge.builder().id("e2").fromNodeId("unstable_operation").toNodeId("success").build()
+                ))
+                .build();
+
+            workflowRepository.save(workflow);
+            Context inputContext = new Context(Map.of());
+            WorkflowExecutionResult result = workflowExecutor.execute("retry-wf", inputContext);
+
+            assertThat(result.isSuccess()).isTrue();
+        }
+    }
 }
