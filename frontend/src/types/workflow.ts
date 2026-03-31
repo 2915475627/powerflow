@@ -59,3 +59,11 @@ export interface NodeResult {
   status?: 'SUCCESS' | 'FAILURE';
   nextNodeId?: Record<string, string>;
 }
+
+export interface NodeTemplate {
+  id: string;
+  name: string;
+  nodeType: string;
+  config: Record<string, unknown>;
+  active: boolean;
+}

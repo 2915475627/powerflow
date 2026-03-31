@@ -17,7 +17,7 @@ import {
   Position,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useCreateWorkflow, useWorkflow, useWorkflows } from '../hooks/useWorkflow';
+import { useCreateWorkflow, useWorkflow, useWorkflows, useNodeTemplatesByType } from '../hooks/useWorkflow';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Workflow, WorkflowNode, WorkflowEdge } from '../types/workflow';
 
@@ -158,6 +158,107 @@ function RetryNode({ data }: { data: any }) {
       )}
       <Handle type="source" position={Position.Right} className="w-3 h-3 bg-yellow-500" />
     </div>
+  );
+}
+
+// LLM Config Panel with template selection
+function LLMConfigPanel({ config, onChange }: { config: any; onChange: (c: any) => void }) {
+  const { data: templates } = useNodeTemplatesByType('LLM_CALL');
+
+  const handleTemplateChange = (templateId: string) => {
+    const template = templates?.find(t => t.id === templateId);
+    if (template) {
+      onChange({
+        ...config,
+        provider: template.config.provider,
+        model: template.config.model,
+        temperature: template.config.temperature,
+        maxTokens: template.config.maxTokens,
+        outputKey: config.outputKey || 'llmResponse',
+      });
+    }
+  };
+
+  return (
+    <>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">选择模板</label>
+        <select
+          value=""
+          onChange={(e) => handleTemplateChange(e.target.value)}
+          className="w-full border rounded-md px-2 py-1 text-sm"
+        >
+          <option value="">-- 选择预设模板 --</option>
+          {templates?.map(template => (
+            <option key={template.id} value={template.id}>
+              {template.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
+        <select
+          value={config.provider || 'openai'}
+          onChange={(e) => onChange({ ...config, provider: e.target.value })}
+          className="w-full border rounded-md px-2 py-1 text-sm"
+        >
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic</option>
+          <option value="azure">Azure OpenAI</option>
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
+        <input
+          type="text"
+          value={config.model || 'gpt-4'}
+          onChange={(e) => onChange({ ...config, model: e.target.value })}
+          className="w-full border rounded-md px-2 py-1 text-sm"
+          placeholder="gpt-4"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Temperature</label>
+        <input
+          type="number"
+          step="0.1"
+          min="0"
+          max="2"
+          value={config.temperature ?? 0.7}
+          onChange={(e) => onChange({ ...config, temperature: parseFloat(e.target.value) })}
+          className="w-full border rounded-md px-2 py-1 text-sm"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Max Tokens</label>
+        <input
+          type="number"
+          value={config.maxTokens || 2000}
+          onChange={(e) => onChange({ ...config, maxTokens: parseInt(e.target.value) })}
+          className="w-full border rounded-md px-2 py-1 text-sm"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Prompt</label>
+        <textarea
+          value={config.prompt || ''}
+          onChange={(e) => onChange({ ...config, prompt: e.target.value })}
+          className="w-full border rounded-md px-2 py-1 text-sm h-24"
+          placeholder="Please process #input.value"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">输出 Key</label>
+        <input
+          type="text"
+          value={config.outputKey || 'llmResponse'}
+          onChange={(e) => onChange({ ...config, outputKey: e.target.value })}
+          className="w-full border rounded-md px-2 py-1 text-sm"
+          placeholder="llmResponse"
+        />
+      </div>
+    </>
   );
 }
 
@@ -592,49 +693,10 @@ export function WorkflowEditorPage() {
                 </>
               )}
               {selectedNode.type === 'LLM_CALL' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
-                    <select
-                      value={nodeConfig.provider || 'openai'}
-                      onChange={(e) => setNodeConfig({ ...nodeConfig, provider: e.target.value })}
-                      className="w-full border rounded-md px-2 py-1 text-sm"
-                    >
-                      <option value="openai">OpenAI</option>
-                      <option value="anthropic">Anthropic</option>
-                      <option value="azure">Azure OpenAI</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
-                    <input
-                      type="text"
-                      value={nodeConfig.model || 'gpt-4'}
-                      onChange={(e) => setNodeConfig({ ...nodeConfig, model: e.target.value })}
-                      className="w-full border rounded-md px-2 py-1 text-sm"
-                      placeholder="gpt-4"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Prompt</label>
-                    <textarea
-                      value={nodeConfig.prompt || ''}
-                      onChange={(e) => setNodeConfig({ ...nodeConfig, prompt: e.target.value })}
-                      className="w-full border rounded-md px-2 py-1 text-sm h-24"
-                      placeholder="Please process #input.value"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">输出 Key</label>
-                    <input
-                      type="text"
-                      value={nodeConfig.outputKey || 'llmResponse'}
-                      onChange={(e) => setNodeConfig({ ...nodeConfig, outputKey: e.target.value })}
-                      className="w-full border rounded-md px-2 py-1 text-sm"
-                      placeholder="llmResponse"
-                    />
-                  </div>
-                </>
+                <LLMConfigPanel
+                  config={nodeConfig}
+                  onChange={setNodeConfig}
+                />
               )}
               {selectedNode.type === 'PARALLEL' && (
                 <>

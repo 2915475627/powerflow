@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { workflowApi, executionApi } from '../api/workflow';
+import { workflowApi, executionApi, nodeTemplateApi } from '../api/workflow';
 import type { Workflow, Context } from '../types/workflow';
 
 export function useWorkflows() {
@@ -56,5 +56,20 @@ export function useExecutionHistory(workflowId: string) {
     queryKey: ['execution-history', workflowId],
     queryFn: () => executionApi.listByWorkflow(workflowId),
     enabled: !!workflowId,
+  });
+}
+
+export function useNodeTemplates() {
+  return useQuery({
+    queryKey: ['node-templates'],
+    queryFn: nodeTemplateApi.listAll,
+  });
+}
+
+export function useNodeTemplatesByType(nodeType: string) {
+  return useQuery({
+    queryKey: ['node-templates', nodeType],
+    queryFn: () => nodeTemplateApi.listByNodeType(nodeType),
+    enabled: !!nodeType,
   });
 }

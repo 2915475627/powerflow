@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Workflow, Context, WorkflowExecutionResult, NodeResult } from '../types/workflow';
+import type { Workflow, Context, WorkflowExecutionResult, NodeResult, NodeTemplate } from '../types/workflow';
 
 const api = axios.create({
   baseURL: '/api',
@@ -45,5 +45,36 @@ export const executionApi = {
   get: async (executionId: string): Promise<WorkflowExecutionResult> => {
     const response = await api.get(`/executions/${executionId}`);
     return response.data;
+  },
+};
+
+export const nodeTemplateApi = {
+  listAll: async (): Promise<NodeTemplate[]> => {
+    const response = await api.get('/node-templates');
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<NodeTemplate> => {
+    const response = await api.get(`/node-templates/${id}`);
+    return response.data;
+  },
+
+  listByNodeType: async (nodeType: string): Promise<NodeTemplate[]> => {
+    const response = await api.get(`/node-templates/type/${nodeType}`);
+    return response.data;
+  },
+
+  create: async (template: NodeTemplate): Promise<NodeTemplate> => {
+    const response = await api.post('/node-templates', template);
+    return response.data;
+  },
+
+  update: async (id: string, template: NodeTemplate): Promise<NodeTemplate> => {
+    const response = await api.put(`/node-templates/${id}`, template);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/node-templates/${id}`);
   },
 };
