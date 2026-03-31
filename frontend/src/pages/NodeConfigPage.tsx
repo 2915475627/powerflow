@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNodeTemplatesByType } from '../hooks/useWorkflow';
+import { useNodeTemplatesByType, useCreateNodeTemplate, useUpdateNodeTemplate, useDeleteNodeTemplate } from '../hooks/useWorkflow';
 import type { NodeTemplate } from '../types/workflow';
 
 // LLM Template Form
@@ -30,7 +30,11 @@ function LLMTemplateForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    const dataToSave = {
+      ...formData,
+      id: formData.id || `${formData.nodeType?.toLowerCase()}-${Date.now()}`,
+    };
+    onSave(dataToSave);
   };
 
   return (
@@ -215,7 +219,11 @@ function HTTPTemplateForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    const dataToSave = {
+      ...formData,
+      id: formData.id || `${formData.nodeType?.toLowerCase()}-${Date.now()}`,
+    };
+    onSave(dataToSave);
   };
 
   return (
@@ -411,11 +419,13 @@ function TemplateGroup({
   title,
   templates,
   onDelete,
+  onSave,
   formComponent: FormComponent,
 }: {
   title: string;
   templates: NodeTemplate[];
   onDelete: (template: NodeTemplate) => void;
+  onSave: (data: Partial<NodeTemplate>) => void;
   formComponent: React.ComponentType<{
     template?: Partial<NodeTemplate>;
     onSave: (data: Partial<NodeTemplate>) => void;
@@ -427,8 +437,7 @@ function TemplateGroup({
   const [showForm, setShowForm] = useState(false);
 
   const handleSave = (data: Partial<NodeTemplate>) => {
-    // In real app, call API to save
-    console.log('Saving template:', data);
+    onSave(data);
     setShowForm(false);
     setEditingTemplate(null);
   };
@@ -494,11 +503,22 @@ function TemplateGroup({
 export function NodeConfigPage() {
   const { data: llmTemplates } = useNodeTemplatesByType('LLM_CALL');
   const { data: httpTemplates } = useNodeTemplatesByType('HTTP_REQUEST');
+  const createTemplate = useCreateNodeTemplate();
+  const updateTemplate = useUpdateNodeTemplate();
+  const deleteTemplate = useDeleteNodeTemplate();
 
   const handleDelete = (template: NodeTemplate) => {
     if (confirm(`确定删除模板 "${template.name}" 吗？`)) {
-      // In real app, call API to delete
-      console.log('Deleting template:', template.id);
+      deleteTemplate.mutate(template.id);
+    }
+  };
+
+  const handleSave = (data: Partial<NodeTemplate>) => {
+    if (data.id) {
+      updateTemplate.mutate({ id: data.id, template: data as NodeTemplate });
+    } else {
+      const { id, ...createData } = data;
+      createTemplate.mutate(createData as Omit<NodeTemplate, 'id'>);
     }
   };
 
@@ -511,6 +531,7 @@ export function NodeConfigPage() {
           title="LLM 调用"
           templates={llmTemplates || []}
           onDelete={handleDelete}
+          onSave={handleSave}
           formComponent={LLMTemplateForm}
         />
 
@@ -518,6 +539,7 @@ export function NodeConfigPage() {
           title="HTTP 请求"
           templates={httpTemplates || []}
           onDelete={handleDelete}
+          onSave={handleSave}
           formComponent={HTTPTemplateForm}
         />
       </div>

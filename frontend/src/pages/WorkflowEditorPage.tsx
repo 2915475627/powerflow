@@ -261,42 +261,64 @@ function LLMConfigPanel({ config, onChange }: { config: any; onChange: (c: any) 
   );
 }
 
-// Node Templates Dropdown - for selecting template to fill node config
-function NodeTemplatesDropdown({
+// Node Templates Modal - for selecting template to fill node config
+function TemplateSelectModal({
   nodeType,
-  onSelectTemplate,
+  onSelect,
+  onClose,
 }: {
   nodeType: string;
-  onSelectTemplate: (template: NodeTemplate) => void;
+  onSelect: (template: NodeTemplate) => void;
+  onClose: () => void;
 }) {
   const { data: templates, isLoading } = useNodeTemplatesByType(nodeType);
 
-  if (isLoading) {
-    return <div className="text-sm text-gray-500">加载中...</div>;
-  }
-
-  if (!templates || templates.length === 0) {
-    return null;
-  }
-
   return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">加载配置</label>
-      <select
-        value=""
-        onChange={(e) => {
-          const template = templates.find(t => t.id === e.target.value);
-          if (template) onSelectTemplate(template);
-        }}
-        className="w-full border rounded-md px-2 py-1 text-sm"
-      >
-        <option value="">-- 选择模板 --</option>
-        {templates.map(template => (
-          <option key={template.id} value={template.id}>
-            {template.name}
-          </option>
-        ))}
-      </select>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-96 max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <h3 className="font-bold text-gray-900">选择模板</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl">&times;</button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          {isLoading ? (
+            <div className="text-center text-gray-500 py-4">加载中...</div>
+          ) : !templates || templates.length === 0 ? (
+            <div className="text-center text-gray-500 py-4">
+              暂无{nodeType}类型的模板<br />
+              <span className="text-sm">请到「节点配置」页面创建</span>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {templates.map(template => (
+                <button
+                  key={template.id}
+                  onClick={() => onSelect(template)}
+                  className="w-full border rounded-lg p-3 text-left hover:bg-gray-50 hover:shadow-md transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-900">{template.name}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${template.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {template.active ? '启用' : '禁用'}
+                    </span>
+                  </div>
+                  {template.remark && (
+                    <p className="text-xs text-gray-500 mt-1">{template.remark}</p>
+                  )}
+                  <div className="text-xs text-gray-400 mt-1">
+                    {template.nodeType === 'LLM_CALL' && (
+                      <span>{(template.config as any)?.provider || 'openai'} / {(template.config as any)?.model || 'gpt-4'}</span>
+                    )}
+                    {template.nodeType === 'HTTP_REQUEST' && (
+                      <span>{(template.config as any)?.method || 'GET'} {(template.config as any)?.url}</span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -480,6 +502,7 @@ export function WorkflowEditorPage() {
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState<'config' | 'execute'>('config');
   const [justSaved, setJustSaved] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   // Load existing workflow if editing
   useMemo(() => {
@@ -721,12 +744,12 @@ export function WorkflowEditorPage() {
                 <h3 className="font-bold text-gray-900">节点配置</h3>
 
                 {/* Load Config Button */}
-                <NodeTemplatesDropdown
-                  nodeType={selectedNode.type || ''}
-                  onSelectTemplate={(template) => {
-                    setNodeConfig({ ...nodeConfig, ...template.config });
-                  }}
-                />
+                <button
+                  onClick={() => setShowTemplateModal(true)}
+                  className="w-full px-3 py-2 bg-indigo-50 text-indigo-700 rounded-md text-sm hover:bg-indigo-100 border border-indigo-200"
+                >
+                  加载配置模板
+                </button>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">节点名称</label>
                   <input
@@ -1084,6 +1107,18 @@ export function WorkflowEditorPage() {
           </div>
         </div>
       </div>
+
+      {/* Template Selection Modal */}
+      {showTemplateModal && selectedNode && (
+        <TemplateSelectModal
+          nodeType={selectedNode.type || ''}
+          onSelect={(template) => {
+            setNodeConfig({ ...nodeConfig, ...template.config });
+            setShowTemplateModal(false);
+          }}
+          onClose={() => setShowTemplateModal(false)}
+        />
+      )}
     </div>
   );
 }

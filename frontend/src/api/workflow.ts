@@ -64,7 +64,7 @@ export const nodeTemplateApi = {
     return response.data;
   },
 
-  create: async (template: NodeTemplate): Promise<NodeTemplate> => {
+  create: async (template: Omit<NodeTemplate, 'id'>): Promise<NodeTemplate> => {
     const response = await api.post('/node-templates', template);
     return response.data;
   },
