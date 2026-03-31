@@ -486,6 +486,15 @@ const defaultNodes: Node[] = [
 
 const defaultEdges: Edge[] = [];
 
+// Helper function to check if workflow can enable trigger
+function canEnableTrigger(workflow: { nodes?: Record<string, WorkflowNode>; startNodeId?: string }): boolean {
+  if (!workflow.nodes || !workflow.startNodeId) return false;
+  const startNode = workflow.nodes[workflow.startNodeId];
+  if (!startNode || startNode.type !== 'START') return false;
+  const config = startNode.config as any;
+  return config?.triggerType && config.triggerType !== 'NONE';
+}
+
 export function WorkflowEditorPage() {
   const [searchParams] = useSearchParams();
   const workflowId = searchParams.get('id');
@@ -497,6 +506,7 @@ export function WorkflowEditorPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState(defaultNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(defaultEdges);
   const [workflowName, setWorkflowName] = useState('新工作流');
+  const [workflowEnabled, setWorkflowEnabled] = useState(false);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [nodeConfig, setNodeConfig] = useState<Record<string, any>>({});
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
@@ -508,6 +518,7 @@ export function WorkflowEditorPage() {
   useMemo(() => {
     if (existingWorkflow) {
       setWorkflowName(existingWorkflow.name);
+      setWorkflowEnabled(existingWorkflow.enabled || false);
       const loadedNodes: Node[] = Object.entries(existingWorkflow.nodes || {}).map(([id, node], index) => ({
         id,
         type: (node as any).type || 'DATA_PROCESSING',
@@ -643,6 +654,7 @@ export function WorkflowEditorPage() {
       startNodeId,
       nodes: workflowNodes,
       edges: workflowEdges,
+      enabled: workflowEnabled,
     };
 
     await createWorkflow.mutateAsync(workflow);
@@ -677,6 +689,18 @@ export function WorkflowEditorPage() {
           {saveWarning && (
             <span className="text-sm text-amber-600">{saveWarning}</span>
           )}
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={workflowEnabled}
+                onChange={(e) => setWorkflowEnabled(e.target.checked)}
+                disabled={!canEnableTrigger({ nodes: nodes.reduce((acc, n) => ({ ...acc, [n.id]: { type: n.data?.type, config: n.data?.config } }), {}), startNodeId: nodes[0]?.id })}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium">启用定时/Webhook</span>
+            </label>
+          </div>
         </div>
         <div className="flex items-center space-x-2">
           <button
