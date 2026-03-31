@@ -25,6 +25,13 @@ public class InMemoryWorkflowRepository implements WorkflowRepository {
     }
 
     @Override
+    public List<Workflow> findByEnabled(boolean enabled) {
+        return store.values().stream()
+            .filter(w -> w.isEnabled() == enabled)
+            .collect(Collectors.toList());
+    }
+
+    @Override
     public Workflow save(Workflow workflow) {
         store.put(workflow.getId(), workflow);
         return workflow;
