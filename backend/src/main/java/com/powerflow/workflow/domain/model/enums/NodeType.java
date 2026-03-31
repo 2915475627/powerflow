@@ -10,5 +10,6 @@ public enum NodeType {
     BRANCH,
     SUBWORKFLOW,
     TRY_CATCH,
-    RETRY
+    RETRY,
+    START
 }
