@@ -1,6 +1,19 @@
 import axios from 'axios';
 import type { Workflow, Context, WorkflowExecutionResult, NodeResult, NodeTemplate } from '../types/workflow';
 
+export type ExecutionStatus = 'SUCCESS' | 'FAILURE';
+
+export interface TriggerExecutionLog {
+  id: string;
+  workflowId: string;
+  triggerType: 'NONE' | 'SCHEDULE' | 'WEBHOOK';
+  triggerSource: string;
+  status: ExecutionStatus;
+  executionId: string;
+  triggeredAt: string;
+  error?: string;
+}
+
 const api = axios.create({
   baseURL: '/api',
 });
@@ -77,4 +90,11 @@ export const nodeTemplateApi = {
   delete: async (id: string): Promise<void> => {
     await api.delete(`/node-templates/${id}`);
   },
+};
+
+export const getTriggerLogs = (workflowId?: string, limit = 50) => {
+  const params = new URLSearchParams();
+  if (workflowId) params.append('workflowId', workflowId);
+  params.append('limit', limit.toString());
+  return api.get(`/trigger-logs?${params}`);
 };

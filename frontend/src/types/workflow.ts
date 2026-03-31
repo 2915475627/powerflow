@@ -18,6 +18,7 @@ export interface Workflow {
   id: string;
   name: string;
   description?: string;
+  enabled?: boolean;
   nodes: Record<string, WorkflowNode>;
   edges: WorkflowEdge[];
   startNodeId: string;
