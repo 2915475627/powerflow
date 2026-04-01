@@ -574,12 +574,17 @@ export function WorkflowEditorPage() {
     if (existingWorkflow) {
       setWorkflowName(existingWorkflow.name);
       setWorkflowEnabled(existingWorkflow.enabled || false);
-      const loadedNodes: Node[] = Object.entries(existingWorkflow.nodes || {}).map(([id, node], index) => ({
-        id,
-        type: (node as any).type || 'DATA_PROCESSING',
-        position: { x: 150 + index * 250, y: 200 },
-        data: { ...(node as any), label: (node as any).name || id },
-      }));
+      const loadedNodes: Node[] = Object.entries(existingWorkflow.nodes || {}).map(([id, node], index) => {
+        // Map backend node type to ReactFlow node type
+        const backendType = (node as any).type || 'DATA_PROCESSING';
+        const rfType = backendType === 'START' ? 'start' : backendType;
+        return {
+          id,
+          type: rfType,
+          position: { x: 150 + index * 250, y: 200 },
+          data: { ...(node as any), type: backendType, label: (node as any).name || id },
+        };
+      });
       setNodes(loadedNodes);
       const loadedEdges: Edge[] = (existingWorkflow.edges || []).map((e: WorkflowEdge) => ({
         id: e.id,
@@ -1195,7 +1200,7 @@ export function WorkflowEditorPage() {
                     </div>
                   </>
                 )}
-                {selectedNode.type === 'start' && (
+                {(selectedNode.type === 'start' || selectedNode.data?.type === 'START') && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">触发类型</label>
