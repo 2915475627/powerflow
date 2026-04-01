@@ -533,9 +533,9 @@ const nodeTypes: NodeTypes = {
 const defaultNodes: Node[] = [
   {
     id: 'start',
-    type: 'DATA_PROCESSING',
+    type: 'start',
     position: { x: 100, y: 200 },
-    data: { label: '开始节点', type: 'DATA_PROCESSING', config: { outputKey: 'result', expression: '#input.value' } },
+    data: { label: '开始', type: 'start', config: { triggerType: 'NONE' } },
   },
 ];
 
