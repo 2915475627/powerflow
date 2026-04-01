@@ -76,7 +76,18 @@ public class NodeExecutorService implements NodeExecutorPort, NodeExecutorCallba
             case TRY_CATCH -> tryCatchHandler.execute(node, context);
             case RETRY -> retryHandler.execute(node, context);
             case START -> executeStartNode(node, context);
+            case END -> executeEndNode(node, context);
         };
+    }
+
+    private NodeResult executeEndNode(Node node, Context context) {
+        // End node terminates the workflow - no next node
+        return NodeResult.builder()
+            .nodeId(node.getId())
+            .status(ExecutionStatus.SUCCESS)
+            .output(Map.of())
+            .nextNodeId(null)
+            .build();
     }
 
     private NodeResult executeStartNode(Node node, Context context) {

@@ -21,12 +21,33 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Workflow, WorkflowNode, WorkflowEdge, NodeTemplate } from '../types/workflow';
 import StartNode from '../components/nodes/StartNode';
 
-// Custom node component
+// Helper to format degree display
+function DegreeBadge({ current, max, type }: { current: number; max: number | null; type: 'in' | 'out' }) {
+  const maxDisplay = max === null ? '∞' : max;
+  const isLimited = max !== null;
+  const isFull = isLimited && current >= max;
+  const colorClass = isFull ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600';
+  return (
+    <span className={`text-xs px-1.5 py-0.5 rounded ${colorClass}`} title={type === 'in' ? '入度' : '出度'}>
+      {type === 'in' ? '入' : '出'}:{current}/{maxDisplay}
+    </span>
+  );
+}
+
+// Custom node component with degree display
 function DataProcessingNode({ data }: { data: any }) {
   return (
     <div className="px-4 py-2 bg-white border-2 border-indigo-500 rounded-lg shadow-md min-w-[150px]">
       <Handle type="target" position={Position.Left} className="w-3 h-3 bg-indigo-500" />
-      <div className="font-medium text-gray-900">数据处理</div>
+      <div className="flex items-center justify-between">
+        <div className="font-medium text-gray-900">数据处理</div>
+        {data.showDegree && (
+          <div className="flex gap-1">
+            <DegreeBadge current={data.inDegree || 0} max={data.maxIn} type="in" />
+            <DegreeBadge current={data.outDegree || 0} max={data.maxOut} type="out" />
+          </div>
+        )}
+      </div>
       <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
       {data.config?.expression && (
         <div className="text-xs text-gray-400 mt-1 truncate">{data.config.expression}</div>
@@ -40,7 +61,15 @@ function ConditionNode({ data }: { data: any }) {
   return (
     <div className="px-4 py-2 bg-white border-2 border-amber-500 rounded-lg shadow-md min-w-[150px]">
       <Handle type="target" position={Position.Left} className="w-3 h-3 bg-amber-500" />
-      <div className="font-medium text-gray-900">条件分支</div>
+      <div className="flex items-center justify-between">
+        <div className="font-medium text-gray-900">条件分支</div>
+        {data.showDegree && (
+          <div className="flex gap-1">
+            <DegreeBadge current={data.inDegree || 0} max={data.maxIn} type="in" />
+            <DegreeBadge current={data.outDegree || 0} max={data.maxOut} type="out" />
+          </div>
+        )}
+      </div>
       <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
       {data.config?.conditions && (
         <div className="text-xs text-gray-400 mt-1">
@@ -56,7 +85,15 @@ function HttpRequestNode({ data }: { data: any }) {
   return (
     <div className="px-4 py-2 bg-white border-2 border-green-500 rounded-lg shadow-md min-w-[150px]">
       <Handle type="target" position={Position.Left} className="w-3 h-3 bg-green-500" />
-      <div className="font-medium text-gray-900">HTTP 请求</div>
+      <div className="flex items-center justify-between">
+        <div className="font-medium text-gray-900">HTTP 请求</div>
+        {data.showDegree && (
+          <div className="flex gap-1">
+            <DegreeBadge current={data.inDegree || 0} max={data.maxIn} type="in" />
+            <DegreeBadge current={data.outDegree || 0} max={data.maxOut} type="out" />
+          </div>
+        )}
+      </div>
       <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
       {data.config?.url && (
         <div className="text-xs text-gray-400 mt-1 truncate">{data.config.method || 'GET'} {data.config.url}</div>
@@ -70,7 +107,15 @@ function LlmCallNode({ data }: { data: any }) {
   return (
     <div className="px-4 py-2 bg-white border-2 border-purple-500 rounded-lg shadow-md min-w-[150px]">
       <Handle type="target" position={Position.Left} className="w-3 h-3 bg-purple-500" />
-      <div className="font-medium text-gray-900">LLM 调用</div>
+      <div className="flex items-center justify-between">
+        <div className="font-medium text-gray-900">LLM 调用</div>
+        {data.showDegree && (
+          <div className="flex gap-1">
+            <DegreeBadge current={data.inDegree || 0} max={data.maxIn} type="in" />
+            <DegreeBadge current={data.outDegree || 0} max={data.maxOut} type="out" />
+          </div>
+        )}
+      </div>
       <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
       {data.config?.model && (
         <div className="text-xs text-gray-400 mt-1 truncate">{data.config.provider || 'openai'}/{data.config.model}</div>
@@ -84,7 +129,15 @@ function ParallelNode({ data }: { data: any }) {
   return (
     <div className="px-4 py-2 bg-white border-2 border-cyan-500 rounded-lg shadow-md min-w-[150px]">
       <Handle type="target" position={Position.Left} className="w-3 h-3 bg-cyan-500" />
-      <div className="font-medium text-gray-900">并行执行</div>
+      <div className="flex items-center justify-between">
+        <div className="font-medium text-gray-900">并行执行</div>
+        {data.showDegree && (
+          <div className="flex gap-1">
+            <DegreeBadge current={data.inDegree || 0} max={data.maxIn} type="in" />
+            <DegreeBadge current={data.outDegree || 0} max={data.maxOut} type="out" />
+          </div>
+        )}
+      </div>
       <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
       {data.config?.branches && (
         <div className="text-xs text-gray-400 mt-1">{data.config.branches.length} 个分支</div>
@@ -98,7 +151,15 @@ function ForeachNode({ data }: { data: any }) {
   return (
     <div className="px-4 py-2 bg-white border-2 border-pink-500 rounded-lg shadow-md min-w-[150px]">
       <Handle type="target" position={Position.Left} className="w-3 h-3 bg-pink-500" />
-      <div className="font-medium text-gray-900">循环迭代</div>
+      <div className="flex items-center justify-between">
+        <div className="font-medium text-gray-900">循环迭代</div>
+        {data.showDegree && (
+          <div className="flex gap-1">
+            <DegreeBadge current={data.inDegree || 0} max={data.maxIn} type="in" />
+            <DegreeBadge current={data.outDegree || 0} max={data.maxOut} type="out" />
+          </div>
+        )}
+      </div>
       <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
       {data.config?.collection && (
         <div className="text-xs text-gray-400 mt-1 truncate">集合: {data.config.collection}</div>
@@ -112,7 +173,15 @@ function BranchNode({ data }: { data: any }) {
   return (
     <div className="px-4 py-2 bg-white border-2 border-orange-500 rounded-lg shadow-md min-w-[150px]">
       <Handle type="target" position={Position.Left} className="w-3 h-3 bg-orange-500" />
-      <div className="font-medium text-gray-900">分支</div>
+      <div className="flex items-center justify-between">
+        <div className="font-medium text-gray-900">分支</div>
+        {data.showDegree && (
+          <div className="flex gap-1">
+            <DegreeBadge current={data.inDegree || 0} max={data.maxIn} type="in" />
+            <DegreeBadge current={data.outDegree || 0} max={data.maxOut} type="out" />
+          </div>
+        )}
+      </div>
       <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
       {data.config?.branches && (
         <div className="text-xs text-gray-400 mt-1">{data.config.branches.length} 个分支</div>
@@ -126,7 +195,15 @@ function SubworkflowNode({ data }: { data: any }) {
   return (
     <div className="px-4 py-2 bg-white border-2 border-teal-500 rounded-lg shadow-md min-w-[150px]">
       <Handle type="target" position={Position.Left} className="w-3 h-3 bg-teal-500" />
-      <div className="font-medium text-gray-900">子工作流</div>
+      <div className="flex items-center justify-between">
+        <div className="font-medium text-gray-900">子工作流</div>
+        {data.showDegree && (
+          <div className="flex gap-1">
+            <DegreeBadge current={data.inDegree || 0} max={data.maxIn} type="in" />
+            <DegreeBadge current={data.outDegree || 0} max={data.maxOut} type="out" />
+          </div>
+        )}
+      </div>
       <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
       {data.config?.workflowId && (
         <div className="text-xs text-gray-400 mt-1 truncate">工作流: {data.config.workflowId}</div>
@@ -140,7 +217,15 @@ function TryCatchNode({ data }: { data: any }) {
   return (
     <div className="px-4 py-2 bg-white border-2 border-red-500 rounded-lg shadow-md min-w-[150px]">
       <Handle type="target" position={Position.Left} className="w-3 h-3 bg-red-500" />
-      <div className="font-medium text-gray-900">异常捕获</div>
+      <div className="flex items-center justify-between">
+        <div className="font-medium text-gray-900">异常捕获</div>
+        {data.showDegree && (
+          <div className="flex gap-1">
+            <DegreeBadge current={data.inDegree || 0} max={data.maxIn} type="in" />
+            <DegreeBadge current={data.outDegree || 0} max={data.maxOut} type="out" />
+          </div>
+        )}
+      </div>
       <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
       <Handle type="source" position={Position.Right} className="w-3 h-3 bg-red-500" />
     </div>
@@ -151,7 +236,15 @@ function RetryNode({ data }: { data: any }) {
   return (
     <div className="px-4 py-2 bg-white border-2 border-yellow-500 rounded-lg shadow-md min-w-[150px]">
       <Handle type="target" position={Position.Left} className="w-3 h-3 bg-yellow-500" />
-      <div className="font-medium text-gray-900">重试</div>
+      <div className="flex items-center justify-between">
+        <div className="font-medium text-gray-900">重试</div>
+        {data.showDegree && (
+          <div className="flex gap-1">
+            <DegreeBadge current={data.inDegree || 0} max={data.maxIn} type="in" />
+            <DegreeBadge current={data.outDegree || 0} max={data.maxOut} type="out" />
+          </div>
+        )}
+      </div>
       <div className="text-xs text-gray-500">{data.label || '未命名节点'}</div>
       {data.config?.maxAttempts && (
         <div className="text-xs text-gray-400 mt-1">最多 {data.config.maxAttempts} 次</div>
@@ -165,7 +258,15 @@ function EndNode({ data }: { data: any }) {
   return (
     <div className="px-4 py-2 bg-white border-2 border-red-600 rounded-lg shadow-md min-w-[150px]">
       <Handle type="target" position={Position.Left} className="w-3 h-3 bg-red-600" />
-      <div className="font-medium text-gray-900">结束</div>
+      <div className="flex items-center justify-between">
+        <div className="font-medium text-gray-900">结束</div>
+        {data.showDegree && (
+          <div className="flex gap-1">
+            <DegreeBadge current={data.inDegree || 0} max={data.maxIn} type="in" />
+            <DegreeBadge current={data.outDegree || 0} max={data.maxOut} type="out" />
+          </div>
+        )}
+      </div>
       <div className="text-xs text-gray-500">{data.label || '结束节点'}</div>
     </div>
   );
@@ -569,7 +670,16 @@ const defaultNodes: Node[] = [
     id: 'start',
     type: 'start',
     position: { x: 100, y: 200 },
-    data: { label: '开始', type: 'START', config: { triggerType: 'NONE' } },
+    data: {
+      label: '开始',
+      type: 'START',
+      config: { triggerType: 'NONE' },
+      showDegree: true,
+      inDegree: 0,
+      outDegree: 0,
+      maxIn: 0,
+      maxOut: null,
+    },
   },
 ];
 
@@ -681,6 +791,45 @@ function canEnableTrigger(workflow: { nodes?: Record<string, WorkflowNode>; star
   return config?.triggerType && config.triggerType !== 'NONE';
 }
 
+// Helper to compute in/out degrees for all nodes
+function computeNodeDegrees(
+  nodes: Node[],
+  edges: Edge[]
+): Record<string, { inDegree: number; outDegree: number }> {
+  const degrees: Record<string, { inDegree: number; outDegree: number }> = {};
+  nodes.forEach(n => { degrees[n.id] = { inDegree: 0, outDegree: 0 }; });
+  edges.forEach(e => {
+    if (degrees[e.source]) degrees[e.source].outDegree++;
+    if (degrees[e.target]) degrees[e.target].inDegree++;
+  });
+  return degrees;
+}
+
+// Helper to add degree info to node data
+function addDegreeInfoToNodes(
+  nodes: Node[],
+  edges: Edge[],
+  constraints: Record<string, { maxIn: number | null; maxOut: number | null }>
+): Node[] {
+  const degrees = computeNodeDegrees(nodes, edges);
+  return nodes.map(n => {
+    const nodeType = (n.data as any)?.type || n.type;
+    const constraint = constraints[nodeType] || { maxIn: null, maxOut: null };
+    const degree = degrees[n.id] || { inDegree: 0, outDegree: 0 };
+    return {
+      ...n,
+      data: {
+        ...n.data,
+        showDegree: true,
+        inDegree: degree.inDegree,
+        outDegree: degree.outDegree,
+        maxIn: constraint.maxIn,
+        maxOut: constraint.maxOut,
+      },
+    };
+  });
+}
+
 export function WorkflowEditorPage() {
   const [searchParams] = useSearchParams();
   const workflowId = searchParams.get('id');
@@ -725,13 +874,15 @@ export function WorkflowEditorPage() {
           data: { ...(node as any), type: backendType, label: (node as any).name || id },
         };
       });
-      setNodes(loadedNodes);
+      // Add degree info to nodes
       const loadedEdges: Edge[] = edges.map((e: WorkflowEdge) => ({
         id: e.id,
         source: e.fromNodeId,
         target: e.toNodeId,
         animated: true,
       }));
+      const nodesWithDegree = addDegreeInfoToNodes(loadedNodes, loadedEdges, nodeDegreeConstraints);
+      setNodes(nodesWithDegree);
       setEdges(loadedEdges);
     }
   }, [existingWorkflow, setNodes, setEdges]);
@@ -763,18 +914,23 @@ export function WorkflowEditorPage() {
         return;
       }
 
-      setEdges((eds) =>
-        addEdge(
+      setEdges((eds) => {
+        const newEdges = addEdge(
           {
             ...params,
             animated: true,
             id: `edge-${Date.now()}`,
           },
           eds
-        )
-      );
+        );
+        // Update nodes with new degree info
+        const currentNodes = nodes;
+        const nodesWithDegree = addDegreeInfoToNodes(currentNodes, newEdges, nodeDegreeConstraints);
+        setNodes(nodesWithDegree);
+        return newEdges;
+      });
     },
-    [nodes, edges]
+    [nodes]
   );
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
@@ -792,9 +948,15 @@ export function WorkflowEditorPage() {
 
   const deleteSelectedEdge = useCallback(() => {
     if (!selectedEdge) return;
-    setEdges((eds) => eds.filter((e) => e.id !== selectedEdge.id));
+    setEdges((eds) => {
+      const newEdges = eds.filter((e) => e.id !== selectedEdge.id);
+      // Update nodes with new degree info
+      const nodesWithDegree = addDegreeInfoToNodes(nodes, newEdges, nodeDegreeConstraints);
+      setNodes(nodesWithDegree);
+      return newEdges;
+    });
     setSelectedEdge(null);
-  }, [selectedEdge, setEdges]);
+  }, [selectedEdge, nodes]);
 
   const addNode = (type: string) => {
     const typeLabels: Record<string, string> = {
@@ -827,17 +989,28 @@ export function WorkflowEditorPage() {
       RETRY: { maxAttempts: 3, initialDelayMs: 1000, backoffStrategy: 'EXPONENTIAL', targetNodeIds: [] },
     };
 
+    const nodeType = type === 'start' ? 'START' : type;
+    const constraint = nodeDegreeConstraints[nodeType] || { maxIn: null, maxOut: null };
+
     const newNode: Node = {
       id: `${type}-${Date.now()}`,
       type,
       position: { x: Math.random() * 400 + 100, y: Math.random() * 300 + 100 },
       data: {
         label: typeLabels[type] || '新节点',
-        type: type === 'start' ? 'START' : type,
+        type: nodeType,
         config: defaultConfigs[type] || {},
+        showDegree: true,
+        inDegree: 0,
+        outDegree: 0,
+        maxIn: constraint.maxIn,
+        maxOut: constraint.maxOut,
       },
     };
-    setNodes((nds) => [...nds, newNode]);
+    setNodes((nds) => {
+      const newNodes = [...nds, newNode];
+      return addDegreeInfoToNodes(newNodes, edges, nodeDegreeConstraints);
+    });
     setJustSaved(false);
   };
 
@@ -855,7 +1028,11 @@ export function WorkflowEditorPage() {
 
   const deleteSelectedNode = () => {
     if (!selectedNode) return;
-    setNodes((nds) => nds.filter((n) => n.id !== selectedNode.id));
+    setNodes((nds) => {
+      const newNodes = nds.filter((n) => n.id !== selectedNode.id);
+      const newEdges = edges.filter((e) => e.source !== selectedNode.id && e.target !== selectedNode.id);
+      return addDegreeInfoToNodes(newNodes, newEdges, nodeDegreeConstraints);
+    });
     setEdges((eds) => eds.filter((e) => e.source !== selectedNode.id && e.target !== selectedNode.id));
     setSelectedNode(null);
   };
@@ -1053,13 +1230,13 @@ export function WorkflowEditorPage() {
                   <div className="text-sm">
                     <span className="text-gray-500">从节点: </span>
                     <span className="font-medium text-gray-900">
-                      {nodes.find(n => n.id === selectedEdge.source)?.data?.label || selectedEdge.source}
+                      {String(nodes.find(n => n.id === selectedEdge.source)?.data?.label || selectedEdge.source)}
                     </span>
                   </div>
                   <div className="text-sm">
                     <span className="text-gray-500">到节点: </span>
                     <span className="font-medium text-gray-900">
-                      {nodes.find(n => n.id === selectedEdge.target)?.data?.label || selectedEdge.target}
+                      {String(nodes.find(n => n.id === selectedEdge.target)?.data?.label || selectedEdge.target)}
                     </span>
                   </div>
                 </div>

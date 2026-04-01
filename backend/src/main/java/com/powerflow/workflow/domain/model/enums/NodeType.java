@@ -11,5 +11,6 @@ public enum NodeType {
     SUBWORKFLOW,
     TRY_CATCH,
     RETRY,
-    START
+    START,
+    END
 }
