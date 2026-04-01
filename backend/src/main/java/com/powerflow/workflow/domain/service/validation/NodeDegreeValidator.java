@@ -107,6 +107,8 @@ public class NodeDegreeValidator implements WorkflowValidator {
             }
         }
 
+        validateParallelStructure(workflow, errors);
+
         if (!errors.isEmpty()) {
             throw new WorkflowValidationException(errors);
         }
@@ -126,5 +128,46 @@ public class NodeDegreeValidator implements WorkflowValidator {
         } catch (IllegalArgumentException e) {
             return NodeType.DATA_PROCESSING; // default for unknown types
         }
+    }
+
+    private void validateParallelStructure(Workflow workflow, List<WorkflowValidationException.ValidationError> errors) {
+        // Find all PARALLEL nodes
+        for (Node node : workflow.getNodes().values()) {
+            if (node.getType() != NodeType.PARALLEL) continue;
+
+            String nodeId = node.getId();
+
+            // Find outgoing edges from PARALLEL
+            List<Edge> outgoingEdges = workflow.getEdges().stream()
+                .filter(e -> e.getFromNodeId().equals(nodeId))
+                .toList();
+
+            // PARALLEL must have edges to branches AND exactly one edge to JOIN
+            long branchEdges = outgoingEdges.size();
+            if (branchEdges < 2) {
+                errors.add(new WorkflowValidationException.ValidationError("nodes",
+                    String.format("PARALLEL node '%s' must have at least 2 branch connections", nodeId)));
+            }
+
+            // Find the JOIN node
+            List<Edge> joinEdges = outgoingEdges.stream()
+                .filter(e -> isJoinNode(workflow, e.getToNodeId()))
+                .toList();
+
+            if (joinEdges.isEmpty()) {
+                errors.add(new WorkflowValidationException.ValidationError("nodes",
+                    String.format("PARALLEL node '%s' must connect to a JOIN node", nodeId)));
+            } else if (joinEdges.size() > 1) {
+                errors.add(new WorkflowValidationException.ValidationError("nodes",
+                    String.format("PARALLEL node '%s' must connect to exactly one JOIN node", nodeId)));
+            }
+        }
+    }
+
+    private boolean isJoinNode(Workflow workflow, String nodeId) {
+        long incomingEdges = workflow.getEdges().stream()
+            .filter(e -> e.getToNodeId().equals(nodeId))
+            .count();
+        return incomingEdges > 1;
     }
 }
