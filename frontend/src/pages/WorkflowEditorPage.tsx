@@ -286,6 +286,7 @@ function JoinNode({ data }: { data: any }) {
         )}
       </div>
       <div className="text-xs text-gray-500">{data.label || '汇聚节点'}</div>
+      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-violet-600" />
     </div>
   );
 }
@@ -1066,10 +1067,49 @@ export function WorkflowEditorPage() {
         maxOut: constraint.maxOut,
       },
     };
-    setNodes((nds) => {
-      const newNodes = [...nds, newNode];
-      return addDegreeInfoToNodes(newNodes, edges, nodeDegreeConstraints);
-    });
+
+    // When adding PARALLEL, automatically create a paired JOIN node with edge connection
+    if (type === 'PARALLEL') {
+      const parallelId = newNode.id;
+      const joinId = `JOIN-${Date.now()}`;
+      const joinPosition = { x: newNode.position.x + 300, y: newNode.position.y };
+
+      const pairedJoin: Node = {
+        id: joinId,
+        type: 'JOIN',
+        position: joinPosition,
+        data: {
+          label: '汇聚',
+          type: 'JOIN',
+          config: {},
+          showDegree: true,
+          inDegree: 0,
+          outDegree: 0,
+          maxIn: null,
+          maxOut: 1,
+        },
+      };
+
+      // Create edge from PARALLEL to JOIN (binding them)
+      const bindingEdge: Edge = {
+        id: `edge-${Date.now()}`,
+        source: parallelId,
+        target: joinId,
+        animated: true,
+      };
+
+      setNodes((nds) => {
+        const newNodes = [...nds, newNode, pairedJoin];
+        const newEdges = [...edges, bindingEdge];
+        return addDegreeInfoToNodes(newNodes, newEdges, nodeDegreeConstraints);
+      });
+      setEdges((eds) => [...eds, bindingEdge]);
+    } else {
+      setNodes((nds) => {
+        const newNodes = [...nds, newNode];
+        return addDegreeInfoToNodes(newNodes, edges, nodeDegreeConstraints);
+      });
+    }
     setJustSaved(false);
   };
 
