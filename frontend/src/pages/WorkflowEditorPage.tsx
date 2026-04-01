@@ -851,6 +851,42 @@ function addDegreeInfoToNodes(
   });
 }
 
+// Find branch nodes for a PARALLEL node based on edges
+function findBranchesForParallel(
+  nodes: Node[],
+  edges: Edge[],
+  parallelNodeId: string
+): string[] {
+  // Find all edges from PARALLEL to other nodes
+  // Those target nodes are the branches
+  return edges
+    .filter(e => e.source === parallelNodeId)
+    .map(e => e.target);
+}
+
+// Find JOIN node for a PARALLEL
+function findJoinForParallel(
+  nodes: Node[],
+  edges: Edge[],
+  parallelNodeId: string
+): string | null {
+  const branchNodeIds = findBranchesForParallel(nodes, edges, parallelNodeId);
+  // JOIN is a node that:
+  // 1. Has incoming edges from branch nodes
+  // 2. Has outgoing edge to continuation
+  const potentialJoinNodes = nodes.filter(n => {
+    const incomingFromBranches = edges.filter(
+      e => e.target === n.id && branchNodeIds.includes(e.source)
+    );
+    return incomingFromBranches.length >= 2;
+  });
+
+  if (potentialJoinNodes.length === 1) {
+    return potentialJoinNodes[0].id;
+  }
+  return null;
+}
+
 export function WorkflowEditorPage() {
   const [searchParams] = useSearchParams();
   const workflowId = searchParams.get('id');
@@ -1101,6 +1137,25 @@ export function WorkflowEditorPage() {
       setSaveWarning(`节点名称 "${duplicateName[0]}" 已重复`);
       return;
     }
+
+    // Auto-populate branchNodeIds for PARALLEL nodes
+    nodes.forEach((node) => {
+      const nodeType = (node.data as any)?.type;
+      if (nodeType === 'PARALLEL') {
+        const branches = findBranchesForParallel(nodes, edges, node.id);
+        const joinNodeId = findJoinForParallel(nodes, edges, node.id);
+        if (branches.length > 0) {
+          node.data = {
+            ...node.data,
+            config: {
+              ...(node.data as any)?.config,
+              branchNodeIds: branches,
+              nextNodeId: joinNodeId,  // Auto-set JOIN as next
+            },
+          };
+        }
+      }
+    });
 
     const workflowNodes: Record<string, WorkflowNode> = {};
     nodes.forEach((node) => {
