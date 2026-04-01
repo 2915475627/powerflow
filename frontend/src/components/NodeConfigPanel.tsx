@@ -88,18 +88,47 @@ function FieldMappingsEditor({
 function STARTNodeConfigPanel({
   config,
   onChange,
+  workflowId,
+  workflowEnabled,
 }: {
   config: StartNodeConfig;
   onChange: (c: StartNodeConfig) => void;
+  workflowId?: string;
+  workflowEnabled?: boolean;
 }) {
-  const handleTriggerTypeChange = (triggerType: TriggerType) => {
+  const triggerType = config.triggerType;
+
+  const handleTriggerTypeChange = (newTriggerType: TriggerType) => {
     onChange({
       ...config,
-      triggerType,
-      cronExpression: triggerType === 'SCHEDULE' ? config.cronExpression || '0 * * * *' : undefined,
-      webhookPath: triggerType === 'WEBHOOK' ? config.webhookPath || '/webhook' : undefined,
-      fieldMappings: triggerType === 'WEBHOOK' ? config.fieldMappings || [] : config.fieldMappings,
+      triggerType: newTriggerType,
+      cronExpression: newTriggerType === 'SCHEDULE' ? config.cronExpression || '0 * * * *' : undefined,
+      webhookPath: newTriggerType === 'WEBHOOK' ? config.webhookPath || '/webhook' : undefined,
+      fieldMappings: newTriggerType === 'WEBHOOK' ? config.fieldMappings || [] : config.fieldMappings,
     });
+  };
+
+  const handleManualTrigger = async () => {
+    if (!workflowId) {
+      window.alert('工作流 ID 不可用，请先保存工作流');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/workflows/${workflowId}/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context: {} }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`执行失败: ${response.statusText}`);
+      }
+
+      window.alert('触发成功！工作流已开始执行');
+    } catch (error) {
+      window.alert(`触发失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
   };
 
   return (
@@ -107,7 +136,7 @@ function STARTNodeConfigPanel({
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">触发类型</label>
         <select
-          value={config.triggerType || 'NONE'}
+          value={triggerType || 'NONE'}
           onChange={(e) => handleTriggerTypeChange(e.target.value as TriggerType)}
           className="w-full border rounded-md px-2 py-1 text-sm"
         >
@@ -117,7 +146,7 @@ function STARTNodeConfigPanel({
         </select>
       </div>
 
-      {config.triggerType === 'SCHEDULE' && (
+      {triggerType === 'SCHEDULE' && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Cron 表达式</label>
           <input
@@ -133,7 +162,7 @@ function STARTNodeConfigPanel({
         </div>
       )}
 
-      {config.triggerType === 'WEBHOOK' && (
+      {triggerType === 'WEBHOOK' && (
         <>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Webhook 路径</label>
@@ -154,6 +183,18 @@ function STARTNodeConfigPanel({
           />
         </>
       )}
+
+      <div className="mt-4 pt-4 border-t">
+        <button
+          onClick={handleManualTrigger}
+          disabled={!workflowEnabled || !triggerType || triggerType === 'NONE'}
+          className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+        >
+          手动触发
+        </button>
+        {!workflowEnabled && <p className="text-xs text-gray-500 mt-1">启用工作流后才能触发</p>}
+        {workflowEnabled && triggerType === 'NONE' && <p className="text-xs text-gray-500 mt-1">请选择触发类型</p>}
+      </div>
     </div>
   );
 }
@@ -163,10 +204,14 @@ export function NodeConfigPanel({
   selectedNode,
   nodeConfig,
   onNodeConfigChange,
+  workflowId,
+  workflowEnabled,
 }: {
   selectedNode: Node | null;
   nodeConfig: Record<string, unknown>;
   onNodeConfigChange: (config: Record<string, unknown>) => void;
+  workflowId?: string;
+  workflowEnabled?: boolean;
 }) {
   if (!selectedNode) {
     return null;
@@ -179,6 +224,8 @@ export function NodeConfigPanel({
           <STARTNodeConfigPanel
             config={nodeConfig as StartNodeConfig}
             onChange={onNodeConfigChange}
+            workflowId={workflowId}
+            workflowEnabled={workflowEnabled}
           />
         );
       case 'DATA_PROCESSING':
