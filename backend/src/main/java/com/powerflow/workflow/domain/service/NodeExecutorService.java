@@ -77,6 +77,7 @@ public class NodeExecutorService implements NodeExecutorPort, NodeExecutorCallba
             case RETRY -> retryHandler.execute(node, context);
             case START -> executeStartNode(node, context);
             case END -> executeEndNode(node, context);
+            case JOIN -> executeJoinNode(node, context);
         };
     }
 
@@ -91,6 +92,17 @@ public class NodeExecutorService implements NodeExecutorPort, NodeExecutorCallba
     }
 
     private NodeResult executeStartNode(Node node, Context context) {
+        String nextNodeId = (String) node.getConfig().get("nextNodeId");
+        return NodeResult.builder()
+            .nodeId(node.getId())
+            .status(ExecutionStatus.SUCCESS)
+            .output(Map.of())
+            .nextNodeId(nextNodeId)
+            .build();
+    }
+
+    private NodeResult executeJoinNode(Node node, Context context) {
+        // JOIN node just passes through - actual waiting is handled by WorkflowExecutor
         String nextNodeId = (String) node.getConfig().get("nextNodeId");
         return NodeResult.builder()
             .nodeId(node.getId())

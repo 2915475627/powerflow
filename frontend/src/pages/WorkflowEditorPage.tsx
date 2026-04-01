@@ -663,6 +663,7 @@ const nodeDegreeConstraints: Record<string, { maxIn: number | null; maxOut: numb
   SUBWORKFLOW: { maxIn: 1, maxOut: 1 },       // 单输入单输出
   TRY_CATCH: { maxIn: 1, maxOut: 1 },         // 单输入单输出
   RETRY: { maxIn: 1, maxOut: 1 },             // 单输入单输出
+  JOIN: { maxIn: null, maxOut: 1 },            // 无限输入，单输出
 };
 
 const defaultNodes: Node[] = [

@@ -12,5 +12,6 @@ public enum NodeType {
     TRY_CATCH,
     RETRY,
     START,
-    END
+    END,
+    JOIN
 }
