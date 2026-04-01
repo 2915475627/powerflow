@@ -87,6 +87,16 @@ public class WorkflowExecutor {
 
             // Get next node ID from result's nextNodeId map
             String nextNodeId = result.getNextNodeId().get("nextNodeId");
+
+            // For START nodes, nextNodeId is null - find the first outgoing edge target
+            if (nextNodeId == null && node.getType() == com.powerflow.workflow.domain.model.enums.NodeType.START) {
+                nextNodeId = workflow.getEdges().stream()
+                    .filter(e -> e.getFromNodeId().equals(node.getId()))
+                    .findFirst()
+                    .map(com.powerflow.workflow.domain.model.Edge::getToNodeId)
+                    .orElse(null);
+            }
+
             currentNodeId = nextNodeId;
         }
 

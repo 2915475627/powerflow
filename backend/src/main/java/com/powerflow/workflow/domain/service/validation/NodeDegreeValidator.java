@@ -137,29 +137,44 @@ public class NodeDegreeValidator implements WorkflowValidator {
 
             String nodeId = node.getId();
 
-            // Find outgoing edges from PARALLEL
+            // Find outgoing edges from PARALLEL (these go to branch nodes)
             List<Edge> outgoingEdges = workflow.getEdges().stream()
                 .filter(e -> e.getFromNodeId().equals(nodeId))
                 .toList();
 
-            // PARALLEL must have edges to branches AND exactly one edge to JOIN
-            long branchEdges = outgoingEdges.size();
-            if (branchEdges < 2) {
+            // PARALLEL must have at least 2 branch connections
+            if (outgoingEdges.size() < 2) {
                 errors.add(new WorkflowValidationException.ValidationError("nodes",
                     String.format("PARALLEL node '%s' must have at least 2 branch connections", nodeId)));
+                continue;
             }
 
-            // Find the JOIN node
-            List<Edge> joinEdges = outgoingEdges.stream()
-                .filter(e -> isJoinNode(workflow, e.getToNodeId()))
+            // Find branch node IDs
+            List<String> branchNodeIds = outgoingEdges.stream()
+                .map(Edge::getToNodeId)
                 .toList();
 
-            if (joinEdges.isEmpty()) {
+            // Find potential JOIN nodes: nodes that receive edges from branch nodes
+            // A proper JOIN has at least 2 incoming edges from the branch nodes
+            List<String> joinCandidates = workflow.getEdges().stream()
+                .filter(e -> branchNodeIds.contains(e.getFromNodeId()))
+                .map(Edge::getToNodeId)
+                .filter(joinCandidate -> {
+                    // Count incoming edges to this candidate from branch nodes
+                    long incomingFromBranches = workflow.getEdges().stream()
+                        .filter(e -> e.getToNodeId().equals(joinCandidate) && branchNodeIds.contains(e.getFromNodeId()))
+                        .count();
+                    return incomingFromBranches >= 2;
+                })
+                .distinct()
+                .toList();
+
+            if (joinCandidates.isEmpty()) {
                 errors.add(new WorkflowValidationException.ValidationError("nodes",
-                    String.format("PARALLEL node '%s' must connect to a JOIN node", nodeId)));
-            } else if (joinEdges.size() > 1) {
+                    String.format("PARALLEL node '%s' must have branches that converge to a JOIN node (at least 2 edges to the same node)", nodeId)));
+            } else if (joinCandidates.size() > 1) {
                 errors.add(new WorkflowValidationException.ValidationError("nodes",
-                    String.format("PARALLEL node '%s' must connect to exactly one JOIN node", nodeId)));
+                    String.format("PARALLEL node '%s' branches converge to multiple nodes instead of one JOIN", nodeId)));
             }
         }
     }

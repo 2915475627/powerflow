@@ -102,4 +102,10 @@ public class WorkflowController implements WorkflowUseCase {
         }
         return triggerLogRepository.findAll(limit);
     }
+
+    @DeleteMapping("/{workflowId}")
+    public ResponseEntity<?> deleteWorkflow(@PathVariable String workflowId) {
+        workflowRepository.delete(workflowId);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -41,7 +41,7 @@ public class NodeResult {
         public Builder status(ExecutionStatus status) { this.status = status; return this; }
         public Builder output(Map<String, Object> output) { this.output = output; return this; }
         public Builder error(String error) { this.error = Optional.of(error); return this; }
-        public Builder nextNodeId(String nextNodeId) { this.nextNodeId = Map.of("nextNodeId", nextNodeId); return this; }
+        public Builder nextNodeId(String nextNodeId) { this.nextNodeId = nextNodeId != null ? Map.of("nextNodeId", nextNodeId) : Map.of(); return this; }
         public NodeResult build() { return new NodeResult(nodeId, status, output, error, nextNodeId); }
     }
 }
