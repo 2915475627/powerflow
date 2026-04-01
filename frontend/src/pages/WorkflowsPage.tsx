@@ -197,7 +197,7 @@ export function WorkflowsPage() {
       {/* Execute Modal */}
       {selectedWorkflowId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] flex flex-col">
             <h2 className="text-xl font-bold mb-4">执行工作流: {selectedWorkflowId}</h2>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">输入 Context (JSON)</label>
@@ -223,9 +223,17 @@ export function WorkflowsPage() {
               </button>
             </div>
             {executeResult && (
-              <div className="bg-gray-50 p-4 rounded-md">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">结果:</h3>
-                <pre className="text-xs overflow-auto">{JSON.stringify(executeResult, null, 2)}</pre>
+              <div className="bg-gray-50 p-4 rounded-md max-h-48 overflow-y-auto">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-sm font-medium text-gray-700">结果:</h3>
+                  <button
+                    onClick={() => setExecuteResult(null)}
+                    className="text-gray-500 hover:text-gray-700 text-lg leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
+                <pre className="text-xs">{JSON.stringify(executeResult, null, 2)}</pre>
               </div>
             )}
           </div>
