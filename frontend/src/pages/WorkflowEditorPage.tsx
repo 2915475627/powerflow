@@ -161,6 +161,16 @@ function RetryNode({ data }: { data: any }) {
   );
 }
 
+function EndNode({ data }: { data: any }) {
+  return (
+    <div className="px-4 py-2 bg-white border-2 border-red-600 rounded-lg shadow-md min-w-[150px]">
+      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-red-600" />
+      <div className="font-medium text-gray-900">结束</div>
+      <div className="text-xs text-gray-500">{data.label || '结束节点'}</div>
+    </div>
+  );
+}
+
 // LLM Config Panel with template selection
 function LLMConfigPanel({ config, onChange }: { config: any; onChange: (c: any) => void }) {
   const { data: templates } = useNodeTemplatesByType('LLM_CALL');
@@ -346,6 +356,12 @@ function NodeTypeListPanel({ onAddNode }: { onAddNode: (type: string) => void })
       ],
     },
     {
+      category: '结束类',
+      nodes: [
+        { type: 'END', label: '结束', color: 'bg-red-100 text-red-700', icon: '⏹️' },
+      ],
+    },
+    {
       category: '数据处理',
       nodes: [
         { type: 'DATA_PROCESSING', label: '数据处理', color: 'bg-indigo-100 text-indigo-700', icon: '⚙️' },
@@ -528,6 +544,24 @@ const nodeTypes: NodeTypes = {
   SUBWORKFLOW: SubworkflowNode,
   TRY_CATCH: TryCatchNode,
   RETRY: RetryNode,
+  END: EndNode,
+};
+
+// Node degree constraints: { maxInDegree, maxOutDegree }
+// null means unlimited
+const nodeDegreeConstraints: Record<string, { maxIn: number | null; maxOut: number | null }> = {
+  START: { maxIn: 0, maxOut: null },           // 入度必须为0，出度无限制
+  END: { maxIn: null, maxOut: 0 },             // 入度无限制，出度必须为0
+  DATA_PROCESSING: { maxIn: 1, maxOut: 1 },    // 单输入单输出
+  CONDITION: { maxIn: 1, maxOut: null },       // 单输入，多条件输出
+  HTTP_REQUEST: { maxIn: 1, maxOut: 1 },      // 单输入单输出
+  LLM_CALL: { maxIn: 1, maxOut: 1 },           // 单输入单输出
+  PARALLEL: { maxIn: 1, maxOut: null },       // 单输入，多分支输出
+  FOREACH: { maxIn: 1, maxOut: 1 },           // 单输入单输出
+  BRANCH: { maxIn: 1, maxOut: null },          // 单输入，多条件输出
+  SUBWORKFLOW: { maxIn: 1, maxOut: 1 },       // 单输入单输出
+  TRY_CATCH: { maxIn: 1, maxOut: 1 },         // 单输入单输出
+  RETRY: { maxIn: 1, maxOut: 1 },             // 单输入单输出
 };
 
 const defaultNodes: Node[] = [
@@ -627,7 +661,6 @@ function topologicalSortAndPosition(
   // Handle any unvisited nodes
   nodeIds.forEach((id) => {
     if (!visited.has(id)) {
-      const nodeType = (nodeMap[id] as any)?.type;
       positions[id] = { x: currentX, y: 200 + Math.random() * 100 };
       currentX += 250;
     }
@@ -704,7 +737,32 @@ export function WorkflowEditorPage() {
   }, [existingWorkflow, setNodes, setEdges]);
 
   const onConnect = useCallback(
-    (params: Connection) =>
+    (params: Connection) => {
+      const sourceNode = nodes.find(n => n.id === params.source);
+      const targetNode = nodes.find(n => n.id === params.target);
+      if (!sourceNode || !targetNode) return;
+
+      const sourceType = (sourceNode.data as any)?.type || sourceNode.type;
+      const targetType = (targetNode.data as any)?.type || targetNode.type;
+
+      // Compute current degrees
+      const sourceOutDegree = edges.filter(e => e.source === params.source).length;
+      const targetInDegree = edges.filter(e => e.target === params.target).length;
+
+      // Check source node out-degree constraint
+      const sourceConstraint = nodeDegreeConstraints[sourceType];
+      if (sourceConstraint?.maxOut !== null && sourceOutDegree >= sourceConstraint.maxOut) {
+        window.alert(`${sourceNode.data?.label || sourceType} 节点出度已达到上限(${sourceConstraint.maxOut})，无法再连接`);
+        return;
+      }
+
+      // Check target node in-degree constraint
+      const targetConstraint = nodeDegreeConstraints[targetType];
+      if (targetConstraint?.maxIn !== null && targetInDegree >= targetConstraint.maxIn) {
+        window.alert(`${targetNode.data?.label || targetType} 节点入度已达到上限(${targetConstraint.maxIn})，无法再连接`);
+        return;
+      }
+
       setEdges((eds) =>
         addEdge(
           {
@@ -714,8 +772,9 @@ export function WorkflowEditorPage() {
           },
           eds
         )
-      ),
-    [setEdges]
+      );
+    },
+    [nodes, edges]
   );
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
@@ -740,6 +799,7 @@ export function WorkflowEditorPage() {
   const addNode = (type: string) => {
     const typeLabels: Record<string, string> = {
       start: '开始',
+      END: '结束',
       DATA_PROCESSING: '新数据节点',
       CONDITION: '新条件节点',
       HTTP_REQUEST: '新HTTP请求',
@@ -754,6 +814,7 @@ export function WorkflowEditorPage() {
 
     const defaultConfigs: Record<string, Record<string, unknown>> = {
       start: { triggerType: 'NONE' },
+      END: {},
       DATA_PROCESSING: { outputKey: 'result', expression: '#input.value' },
       CONDITION: { conditions: [], defaultNextNodeId: '' },
       HTTP_REQUEST: { url: 'https://api.example.com', method: 'GET', outputKey: 'httpResponse' },
