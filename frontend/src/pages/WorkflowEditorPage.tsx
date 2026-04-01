@@ -541,71 +541,102 @@ const defaultNodes: Node[] = [
 
 const defaultEdges: Edge[] = [];
 
-// Topological sort helper - sort nodes by their distance from START node
-function topologicalSort(
+// Topological sort helper - sort nodes and compute positions for branch nodes
+function topologicalSortAndPosition(
   nodeMap: Record<string, WorkflowNode>,
   edges: WorkflowEdge[],
   startNodeId: string
-): string[] {
+): Array<{ id: string; position: { x: number; y: number } }> {
   const nodeIds = Object.keys(nodeMap);
   if (nodeIds.length === 0) return [];
 
-  // Build adjacency list
-  const inDegree: Record<string, number> = {};
+  // Build adjacency list and reverse adjacency list
   const adjList: Record<string, string[]> = {};
+  const revAdjList: Record<string, string[]> = {};
+  const inDegree: Record<string, number> = {};
 
   nodeIds.forEach(id => {
-    inDegree[id] = 0;
     adjList[id] = [];
+    revAdjList[id] = [];
+    inDegree[id] = 0;
   });
 
   // Build edges (from -> to)
   edges.forEach(edge => {
     if (adjList[edge.fromNodeId]) {
       adjList[edge.fromNodeId].push(edge.toNodeId);
+      revAdjList[edge.toNodeId].push(edge.fromNodeId);
       inDegree[edge.toNodeId]++;
     }
   });
 
-  // Find START node if not provided
+  // Find START node
   let startId = startNodeId;
   if (!startId || !nodeMap[startId]) {
-    // Find node with inDegree 0 (potential start)
     const potentialStarts = nodeIds.filter(id => inDegree[id] === 0);
-    // Prefer START type node
     const startNode = potentialStarts.find(id => (nodeMap[id] as any)?.type === 'START');
     startId = startNode || potentialStarts[0] || nodeIds[0];
   }
 
-  // BFS from START node
-  const queue: string[] = [startId];
+  // Branch node types that need vertical layout
+  const branchTypes = ['PARALLEL', 'FOREACH', 'BRANCH'];
+
+  // Compute positions using BFS with vertical offset for branches
+  const positions: Record<string, { x: number; y: number }> = {};
   const visited = new Set<string>();
-  const sorted: string[] = [];
+
+  // Track y offset for each level
+  let currentX = 100;
+  const ySpacing = 100;
+  const branchXOffset = 200; // horizontal offset for branch nodes
+
+  // BFS from START
+  const queue: Array<{ id: string; x: number; y: number }> = [{ id: startId, x: currentX, y: 200 }];
 
   while (queue.length > 0) {
-    const current = queue.shift()!;
-    if (visited.has(current)) continue;
-    visited.add(current);
-    sorted.push(current);
+    const { id, x, y } = queue.shift()!;
+    if (visited.has(id)) continue;
+    visited.add(id);
 
-    // Add dependents to queue
-    if (adjList[current]) {
-      adjList[current].forEach(dep => {
-        if (!visited.has(dep)) {
-          queue.push(dep);
+    const nodeType = (nodeMap[id] as any)?.type;
+    positions[id] = { x, y };
+
+    // Check if this is a branch node with multiple children
+    const children = adjList[id] || [];
+    const isBranchNode = branchTypes.includes(nodeType);
+
+    if (isBranchNode && children.length > 1) {
+      // Place branches vertically below, starting from current x
+      const startY = y + ySpacing;
+      children.forEach((childId, idx) => {
+        const newY = startY + idx * ySpacing;
+        if (!visited.has(childId)) {
+          queue.push({ id: childId, x: x + branchXOffset, y: newY });
+        }
+      });
+    } else {
+      // Regular sequential flow - place horizontally
+      children.forEach((childId) => {
+        if (!visited.has(childId)) {
+          queue.push({ id: childId, x: x + 250, y: 200 });
         }
       });
     }
   }
 
-  // Add any remaining unvisited nodes
-  nodeIds.forEach(id => {
+  // Handle any unvisited nodes
+  nodeIds.forEach((id) => {
     if (!visited.has(id)) {
-      sorted.push(id);
+      const nodeType = (nodeMap[id] as any)?.type;
+      positions[id] = { x: currentX, y: 200 + Math.random() * 100 };
+      currentX += 250;
     }
   });
 
-  return sorted;
+  return nodeIds.map(id => ({
+    id,
+    position: positions[id] || { x: 100, y: 200 }
+  }));
 }
 
 // Helper function to check if workflow can enable trigger
@@ -642,13 +673,13 @@ export function WorkflowEditorPage() {
       setWorkflowName(existingWorkflow.name);
       setWorkflowEnabled(existingWorkflow.enabled || false);
 
-      // Topological sort to ensure correct node order
+      // Topological sort with position computation for branch nodes
       const nodeMap = existingWorkflow.nodes || {};
       const edges = existingWorkflow.edges || [];
       const startNodeId = existingWorkflow.startNodeId;
-      const sortedNodeIds = topologicalSort(nodeMap, edges, startNodeId);
+      const positionedNodes = topologicalSortAndPosition(nodeMap, edges, startNodeId);
 
-      const loadedNodes: Node[] = sortedNodeIds.map((id, index) => {
+      const loadedNodes: Node[] = positionedNodes.map(({ id, position }) => {
         const node = nodeMap[id];
         // Map backend node type to ReactFlow node type
         const backendType = (node as any).type || 'DATA_PROCESSING';
@@ -656,7 +687,7 @@ export function WorkflowEditorPage() {
         return {
           id,
           type: rfType,
-          position: { x: 100 + index * 250, y: 200 },
+          position,
           data: { ...(node as any), type: backendType, label: (node as any).name || id },
         };
       });
