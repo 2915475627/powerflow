@@ -535,7 +535,7 @@ const defaultNodes: Node[] = [
     id: 'start',
     type: 'start',
     position: { x: 100, y: 200 },
-    data: { label: '开始', type: 'start', config: { triggerType: 'NONE' } },
+    data: { label: '开始', type: 'START', config: { triggerType: 'NONE' } },
   },
 ];
 
@@ -647,7 +647,7 @@ export function WorkflowEditorPage() {
       position: { x: Math.random() * 400 + 100, y: Math.random() * 300 + 100 },
       data: {
         label: typeLabels[type] || '新节点',
-        type,
+        type: type === 'start' ? 'START' : type,
         config: defaultConfigs[type] || {},
       },
     };
@@ -694,7 +694,7 @@ export function WorkflowEditorPage() {
     }
 
     // 3. Check START node uniqueness
-    const startNodes = nodes.filter(n => n.type === 'start');
+    const startNodes = nodes.filter(n => n.data?.type === 'START');
     if (startNodes.length === 0) {
       setSaveWarning('工作流至少需要一个开始节点');
       return;
