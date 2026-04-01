@@ -661,6 +661,7 @@ export function WorkflowEditorPage() {
   const [workflowName, setWorkflowName] = useState('新工作流');
   const [workflowEnabled, setWorkflowEnabled] = useState(false);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
   const [nodeConfig, setNodeConfig] = useState<Record<string, any>>({});
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState<'config' | 'execute'>('config');
@@ -719,9 +720,22 @@ export function WorkflowEditorPage() {
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
+    setSelectedEdge(null);
     setNodeConfig((node.data as any)?.config || {});
     setJustSaved(false);
   }, []);
+
+  const onEdgeClick = useCallback((_event: React.MouseEvent, edge: Edge) => {
+    setSelectedEdge(edge);
+    setSelectedNode(null);
+    setJustSaved(false);
+  }, []);
+
+  const deleteSelectedEdge = useCallback(() => {
+    if (!selectedEdge) return;
+    setEdges((eds) => eds.filter((e) => e.id !== selectedEdge.id));
+    setSelectedEdge(null);
+  }, [selectedEdge, setEdges]);
 
   const addNode = (type: string) => {
     const typeLabels: Record<string, string> = {
@@ -929,6 +943,7 @@ export function WorkflowEditorPage() {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onNodeClick={onNodeClick}
+            onEdgeClick={onEdgeClick}
             nodeTypes={nodeTypes}
             fitView
             className="bg-gray-50"
@@ -969,6 +984,33 @@ export function WorkflowEditorPage() {
           <div className="flex-1 overflow-y-auto p-4">
             {rightTab === 'execute' ? (
               <ExecutePanel selectedNode={selectedNode} workflowId={workflowId || ''} />
+            ) : selectedEdge ? (
+              /* Edge Config Panel when edge selected */
+              <div className="space-y-3">
+                <h3 className="font-bold text-gray-900">关系配置</h3>
+                <div className="p-3 bg-gray-50 rounded-md space-y-2">
+                  <div className="text-sm">
+                    <span className="text-gray-500">从节点: </span>
+                    <span className="font-medium text-gray-900">
+                      {nodes.find(n => n.id === selectedEdge.source)?.data?.label || selectedEdge.source}
+                    </span>
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-gray-500">到节点: </span>
+                    <span className="font-medium text-gray-900">
+                      {nodes.find(n => n.id === selectedEdge.target)?.data?.label || selectedEdge.target}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex space-x-2 pt-2">
+                  <button
+                    onClick={deleteSelectedEdge}
+                    className="flex-1 px-3 py-1.5 bg-red-100 text-red-700 rounded-md text-sm hover:bg-red-200"
+                  >
+                    删除连线
+                  </button>
+                </div>
+              </div>
             ) : selectedNode ? (
               /* Node Config Panel when node selected */
               <div className="space-y-3">
