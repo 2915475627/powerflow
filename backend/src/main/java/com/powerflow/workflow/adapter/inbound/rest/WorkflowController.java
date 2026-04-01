@@ -7,9 +7,15 @@ import com.powerflow.workflow.domain.port.outbound.WorkflowRepository;
 import com.powerflow.workflow.domain.service.ContextManager;
 import com.powerflow.workflow.domain.service.NodeExecutorService;
 import com.powerflow.workflow.domain.service.WorkflowExecutor;
+import com.powerflow.workflow.domain.service.validation.WorkflowValidationChain;
+import com.powerflow.workflow.domain.service.validation.WorkflowValidationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/workflows")
@@ -20,17 +26,20 @@ public class WorkflowController implements WorkflowUseCase {
     private final ContextManager contextManager;
     private final NodeExecutorService nodeExecutorService;
     private final TriggerExecutionLogRepository triggerLogRepository;
+    private final WorkflowValidationChain validationChain;
 
     public WorkflowController(WorkflowExecutor workflowExecutor,
                                WorkflowRepository workflowRepository,
                                ContextManager contextManager,
                                NodeExecutorService nodeExecutorService,
-                               TriggerExecutionLogRepository triggerLogRepository) {
+                               TriggerExecutionLogRepository triggerLogRepository,
+                               WorkflowValidationChain validationChain) {
         this.workflowExecutor = workflowExecutor;
         this.workflowRepository = workflowRepository;
         this.contextManager = contextManager;
         this.nodeExecutorService = nodeExecutorService;
         this.triggerLogRepository = triggerLogRepository;
+        this.validationChain = validationChain;
     }
 
     @Override
@@ -51,8 +60,19 @@ public class WorkflowController implements WorkflowUseCase {
     }
 
     @PostMapping
-    public Workflow createWorkflow(@RequestBody Workflow workflow) {
-        return workflowRepository.save(workflow);
+    public ResponseEntity<?> createWorkflow(@RequestBody Workflow workflow) {
+        validationChain.validate(workflow);
+        Workflow saved = workflowRepository.save(workflow);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+    }
+
+    @ExceptionHandler(WorkflowValidationException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationException(WorkflowValidationException ex) {
+        List<Map<String, String>> errors = ex.getErrors().stream()
+            .map(e -> Map.of("field", e.getField(), "message", e.getMessage()))
+            .collect(Collectors.toList());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(Map.of("success", false, "errors", errors));
     }
 
     @GetMapping("/{workflowId}")
