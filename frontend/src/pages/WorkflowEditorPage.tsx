@@ -745,10 +745,18 @@ export function WorkflowEditorPage() {
       enabled: workflowEnabled,
     };
 
-    await createWorkflow.mutateAsync(workflow);
-    setJustSaved(true);
-    setSelectedNode(null);
-    navigate('/');
+    try {
+      await createWorkflow.mutateAsync(workflow);
+      setJustSaved(true);
+      setSelectedNode(null);
+      navigate('/');
+    } catch (error: any) {
+      console.error('Save failed:', error);
+      const errorMessage = error?.response?.data?.errors?.[0]?.message
+        || error?.message
+        || '保存失败';
+      setSaveWarning(errorMessage);
+    }
   };
 
   const handleLabelChange = (e: ChangeEvent<HTMLInputElement>) => {
