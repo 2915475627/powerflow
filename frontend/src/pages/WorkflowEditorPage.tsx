@@ -272,6 +272,24 @@ function EndNode({ data }: { data: any }) {
   );
 }
 
+function JoinNode({ data }: { data: any }) {
+  return (
+    <div className="px-4 py-2 bg-white border-2 border-violet-600 rounded-lg shadow-md min-w-[150px]">
+      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-violet-600" />
+      <div className="flex items-center justify-between">
+        <div className="font-medium text-gray-900">JOIN</div>
+        {data.showDegree && (
+          <div className="flex gap-1">
+            <DegreeBadge current={data.inDegree || 0} max={data.maxIn} type="in" />
+            <DegreeBadge current={data.outDegree || 0} max={data.maxOut} type="out" />
+          </div>
+        )}
+      </div>
+      <div className="text-xs text-gray-500">{data.label || '汇聚节点'}</div>
+    </div>
+  );
+}
+
 // LLM Config Panel with template selection
 function LLMConfigPanel({ config, onChange }: { config: any; onChange: (c: any) => void }) {
   const { data: templates } = useNodeTemplatesByType('LLM_CALL');
@@ -484,6 +502,7 @@ function NodeTypeListPanel({ onAddNode }: { onAddNode: (type: string) => void })
         { type: 'BRANCH', label: '分支', color: 'bg-orange-100 text-orange-700', icon: '🌳' },
         { type: 'TRY_CATCH', label: '异常捕获', color: 'bg-red-100 text-red-700', icon: '🛡️' },
         { type: 'RETRY', label: '重试', color: 'bg-yellow-100 text-yellow-700', icon: '🔁' },
+        { type: 'JOIN', label: '汇聚', color: 'bg-violet-100 text-violet-700', icon: '🔗' },
       ],
     },
     {
@@ -646,6 +665,7 @@ const nodeTypes: NodeTypes = {
   TRY_CATCH: TryCatchNode,
   RETRY: RetryNode,
   END: EndNode,
+  JOIN: JoinNode,
 };
 
 // Node degree constraints: { maxInDegree, maxOutDegree }
@@ -973,6 +993,7 @@ export function WorkflowEditorPage() {
       SUBWORKFLOW: '新子工作流',
       TRY_CATCH: '新异常捕获',
       RETRY: '新重试节点',
+      JOIN: '新汇聚节点',
     };
 
     const defaultConfigs: Record<string, Record<string, unknown>> = {
@@ -988,6 +1009,7 @@ export function WorkflowEditorPage() {
       SUBWORKFLOW: { workflowId: '', nextNodeId: '' },
       TRY_CATCH: { tryNodes: [], catchNodes: [] },
       RETRY: { maxAttempts: 3, initialDelayMs: 1000, backoffStrategy: 'EXPONENTIAL', targetNodeIds: [] },
+      JOIN: {},
     };
 
     const nodeType = type === 'start' ? 'START' : type;
