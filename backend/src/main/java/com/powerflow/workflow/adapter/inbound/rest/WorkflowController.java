@@ -61,6 +61,13 @@ public class WorkflowController implements WorkflowUseCase {
 
     @PostMapping
     public ResponseEntity<?> createWorkflow(@RequestBody Workflow workflow) {
+        System.out.println("DEBUG createWorkflow: workflow=" + workflow);
+        System.out.println("DEBUG createWorkflow: nodes=" + workflow.getNodes());
+        if (workflow.getNodes() != null) {
+            workflow.getNodes().forEach((k, v) -> {
+                System.out.println("DEBUG node key=" + k + " node=" + v + " type=" + (v != null ? v.getType() : "null"));
+            });
+        }
         validationChain.validate(workflow);
         Workflow saved = workflowRepository.save(workflow);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);

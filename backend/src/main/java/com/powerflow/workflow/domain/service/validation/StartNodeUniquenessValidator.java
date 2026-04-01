@@ -15,8 +15,19 @@ public class StartNodeUniquenessValidator implements WorkflowValidator {
     public void validate(Workflow workflow) {
         List<WorkflowValidationException.ValidationError> errors = new ArrayList<>();
 
+        if (workflow.getNodes() == null || workflow.getNodes().isEmpty()) {
+            errors.add(new WorkflowValidationException.ValidationError("nodes", "Workflow must have at least one node"));
+            throw new WorkflowValidationException(errors);
+        }
+
+        // Check for START node by enum type OR by string type (for deserialization flexibility)
         long startNodeCount = workflow.getNodes().values().stream()
-            .filter(node -> node.getType() == NodeType.START)
+            .filter(node -> {
+                if (node.getType() == NodeType.START) return true;
+                // Also check if type name contains START (fallback for string-based deserialization)
+                if (node.getType() != null && node.getType().name().contains("START")) return true;
+                return false;
+            })
             .count();
 
         if (startNodeCount == 0) {
