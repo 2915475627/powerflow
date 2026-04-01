@@ -47,8 +47,9 @@ In `WorkflowEditorPage.tsx` `saveWorkflow` function:
 
 | Validator | Check | Error Message |
 |-----------|-------|---------------|
+| `WorkflowNameUniquenessValidator` | Workflow name must be unique | "工作流名称 '{name}' 已存在" |
 | `StartNodeUniquenessValidator` | Only 1 START node allowed | "工作流只能有一个开始节点" |
-| `NodeNameUniquenessValidator` | All node names must be unique | "节点名称不能重复: {name}" |
+| `NodeNameUniquenessValidator` | All node names must be unique | "节点名称 '{name}' 已重复" |
 | `WorkflowStructureValidator` | At least 1 node exists | "工作流至少需要一个节点" |
 
 On validation error: Show alert, block save.
@@ -63,6 +64,7 @@ public interface WorkflowValidator {
 ```
 
 **Create validators:**
+- `WorkflowNameUniquenessValidator` - Checks workflow name is unique (excluding current workflow on update)
 - `StartNodeUniquenessValidator` - Checks only 1 START node exists
 - `NodeNameUniquenessValidator` - Checks all node names are unique
 - `WorkflowStructureValidator` - Checks basic structure
@@ -82,6 +84,7 @@ public interface WorkflowValidator {
   "success": false,
   "error": "VALIDATION_ERROR",
   "details": [
+    { "field": "name", "message": "工作流名称 '订单处理' 已存在" },
     { "field": "nodes", "message": "工作流只能有一个开始节点" },
     { "field": "nodes['calc'].name", "message": "节点名称 '计算' 已重复" }
   ]
