@@ -19,6 +19,7 @@ import '@xyflow/react/dist/style.css';
 import { useCreateWorkflow, useWorkflow, useWorkflows, useNodeTemplatesByType } from '../hooks/useWorkflow';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Workflow, WorkflowNode, WorkflowEdge, NodeTemplate } from '../types/workflow';
+import StartNode from '../components/nodes/StartNode';
 
 // Custom node component
 function DataProcessingNode({ data }: { data: any }) {
@@ -325,34 +326,87 @@ function TemplateSelectModal({
 
 // Node Type List Panel (shown when no node selected)
 function NodeTypeListPanel({ onAddNode }: { onAddNode: (type: string) => void }) {
-  const nodeTypes = [
-    { type: 'DATA_PROCESSING', label: '数据处理', color: 'bg-indigo-100 text-indigo-700', icon: '⚙️' },
-    { type: 'CONDITION', label: '条件分支', color: 'bg-amber-100 text-amber-700', icon: '🔀' },
-    { type: 'HTTP_REQUEST', label: 'HTTP 请求', color: 'bg-green-100 text-green-700', icon: '🌐' },
-    { type: 'LLM_CALL', label: 'LLM 调用', color: 'bg-purple-100 text-purple-700', icon: '🤖' },
-    { type: 'PARALLEL', label: '并行执行', color: 'bg-cyan-100 text-cyan-700', icon: '⚡' },
-    { type: 'FOREACH', label: '循环迭代', color: 'bg-pink-100 text-pink-700', icon: '🔄' },
-    { type: 'BRANCH', label: '分支', color: 'bg-orange-100 text-orange-700', icon: '🌳' },
-    { type: 'SUBWORKFLOW', label: '子工作流', color: 'bg-teal-100 text-teal-700', icon: '📦' },
-    { type: 'TRY_CATCH', label: '异常捕获', color: 'bg-red-100 text-red-700', icon: '🛡️' },
-    { type: 'RETRY', label: '重试', color: 'bg-yellow-100 text-yellow-700', icon: '🔁' },
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    '触发类': true,
+    '数据处理': true,
+    '集成': false,
+    '控制流': false,
+    '子工作流': false,
+  });
+
+  const toggleSection = (section: string) => {
+    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  const nodeGroups = [
+    {
+      category: '触发类',
+      nodes: [
+        { type: 'start', label: '开始', color: 'bg-green-100 text-green-700', icon: '▶️' },
+      ],
+    },
+    {
+      category: '数据处理',
+      nodes: [
+        { type: 'DATA_PROCESSING', label: '数据处理', color: 'bg-indigo-100 text-indigo-700', icon: '⚙️' },
+        { type: 'CONDITION', label: '条件分支', color: 'bg-amber-100 text-amber-700', icon: '🔀' },
+      ],
+    },
+    {
+      category: '集成',
+      nodes: [
+        { type: 'HTTP_REQUEST', label: 'HTTP 请求', color: 'bg-green-100 text-green-700', icon: '🌐' },
+        { type: 'LLM_CALL', label: 'LLM 调用', color: 'bg-purple-100 text-purple-700', icon: '🤖' },
+      ],
+    },
+    {
+      category: '控制流',
+      nodes: [
+        { type: 'PARALLEL', label: '并行执行', color: 'bg-cyan-100 text-cyan-700', icon: '⚡' },
+        { type: 'FOREACH', label: '循环迭代', color: 'bg-pink-100 text-pink-700', icon: '🔄' },
+        { type: 'BRANCH', label: '分支', color: 'bg-orange-100 text-orange-700', icon: '🌳' },
+        { type: 'TRY_CATCH', label: '异常捕获', color: 'bg-red-100 text-red-700', icon: '🛡️' },
+        { type: 'RETRY', label: '重试', color: 'bg-yellow-100 text-yellow-700', icon: '🔁' },
+      ],
+    },
+    {
+      category: '子工作流',
+      nodes: [
+        { type: 'SUBWORKFLOW', label: '子工作流', color: 'bg-teal-100 text-teal-700', icon: '📦' },
+      ],
+    },
   ];
 
   return (
     <div className="space-y-2">
       <h4 className="font-medium text-gray-900 text-sm">添加节点</h4>
-      <div className="grid grid-cols-2 gap-2">
-        {nodeTypes.map(({ type, label, color, icon }) => (
-          <button
-            key={type}
-            onClick={() => onAddNode(type)}
-            className={`${color} px-3 py-2 rounded-md text-sm text-left hover:opacity-80 transition-opacity`}
-          >
-            <div className="flex items-center space-x-1.5">
-              <span>{icon}</span>
-              <span>{label}</span>
-            </div>
-          </button>
+      <div className="space-y-1">
+        {nodeGroups.map(({ category, nodes }) => (
+          <div key={category} className="border rounded-md overflow-hidden">
+            <button
+              onClick={() => toggleSection(category)}
+              className="w-full px-3 py-2 bg-gray-50 text-left flex items-center justify-between hover:bg-gray-100 transition-colors"
+            >
+              <span className="font-medium text-gray-700 text-sm">{category}</span>
+              <span className="text-gray-400">{openSections[category] ? '▼' : '▶'}</span>
+            </button>
+            {openSections[category] && (
+              <div className="p-2 grid grid-cols-2 gap-2">
+                {nodes.map(({ type, label, color, icon }) => (
+                  <button
+                    key={type}
+                    onClick={() => onAddNode(type)}
+                    className={`${color} px-3 py-2 rounded-md text-sm text-left hover:opacity-80 transition-opacity`}
+                  >
+                    <div className="flex items-center space-x-1.5">
+                      <span>{icon}</span>
+                      <span>{label}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </div>
     </div>
@@ -463,6 +517,7 @@ function ExecutePanel({
 }
 
 const nodeTypes: NodeTypes = {
+  start: StartNode,
   DATA_PROCESSING: DataProcessingNode,
   CONDITION: ConditionNode,
   HTTP_REQUEST: HttpRequestNode,
@@ -559,6 +614,7 @@ export function WorkflowEditorPage() {
 
   const addNode = (type: string) => {
     const typeLabels: Record<string, string> = {
+      start: '开始',
       DATA_PROCESSING: '新数据节点',
       CONDITION: '新条件节点',
       HTTP_REQUEST: '新HTTP请求',
@@ -572,6 +628,7 @@ export function WorkflowEditorPage() {
     };
 
     const defaultConfigs: Record<string, Record<string, unknown>> = {
+      start: { triggerType: 'NONE' },
       DATA_PROCESSING: { outputKey: 'result', expression: '#input.value' },
       CONDITION: { conditions: [], defaultNextNodeId: '' },
       HTTP_REQUEST: { url: 'https://api.example.com', method: 'GET', outputKey: 'httpResponse' },

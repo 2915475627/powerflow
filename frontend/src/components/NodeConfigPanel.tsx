@@ -174,7 +174,7 @@ export function NodeConfigPanel({
 
   const renderConfigPanel = () => {
     switch (selectedNode.type) {
-      case 'START':
+      case 'start':
         return (
           <STARTNodeConfigPanel
             config={nodeConfig as StartNodeConfig}
