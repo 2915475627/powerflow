@@ -675,13 +675,44 @@ export function WorkflowEditorPage() {
   };
 
   const saveWorkflow = async () => {
-    // Check for duplicate workflow name (exclude current workflow if editing)
-    const isDuplicate = workflows?.some(w =>
-      w.name === workflowName && w.id !== workflowId
-    );
+    // Validation
+    const currentWorkflowName = workflowName;
 
+    // 1. Check workflow name is not empty
+    if (!currentWorkflowName.trim()) {
+      setSaveWarning('工作流名称不能为空');
+      return;
+    }
+
+    // 2. Check for duplicate workflow name
+    const isDuplicate = workflows?.some(w =>
+      w.name === currentWorkflowName && w.id !== workflowId
+    );
     if (isDuplicate) {
-      setSaveWarning(`工作流名称 "${workflowName}" 已存在，请使用其他名称`);
+      setSaveWarning(`工作流名称 "${currentWorkflowName}" 已存在`);
+      return;
+    }
+
+    // 3. Check START node uniqueness
+    const startNodes = nodes.filter(n => n.type === 'start');
+    if (startNodes.length === 0) {
+      setSaveWarning('工作流至少需要一个开始节点');
+      return;
+    }
+    if (startNodes.length > 1) {
+      setSaveWarning('工作流只能有一个开始节点');
+      return;
+    }
+
+    // 4. Check node name uniqueness
+    const nodeNameCount: Record<string, number> = {};
+    nodes.forEach(n => {
+      const name = (n.data as any)?.label || n.id;
+      nodeNameCount[name] = (nodeNameCount[name] || 0) + 1;
+    });
+    const duplicateName = Object.entries(nodeNameCount).find(([_, count]) => count > 1);
+    if (duplicateName) {
+      setSaveWarning(`节点名称 "${duplicateName[0]}" 已重复`);
       return;
     }
 
@@ -707,7 +738,7 @@ export function WorkflowEditorPage() {
 
     const workflow: Workflow = {
       id: workflowId || `wf-${Date.now()}`,
-      name: workflowName,
+      name: currentWorkflowName,
       startNodeId,
       nodes: workflowNodes,
       edges: workflowEdges,
