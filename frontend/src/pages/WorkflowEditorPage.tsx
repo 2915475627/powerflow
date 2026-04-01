@@ -1187,6 +1187,100 @@ export function WorkflowEditorPage() {
                     </div>
                   </>
                 )}
+                {selectedNode.type === 'start' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">触发类型</label>
+                      <select
+                        value={nodeConfig.triggerType || 'NONE'}
+                        onChange={(e) => {
+                          const newType = e.target.value as 'NONE' | 'SCHEDULE' | 'WEBHOOK';
+                          setNodeConfig({
+                            ...nodeConfig,
+                            triggerType: newType,
+                            cronExpression: newType === 'SCHEDULE' ? nodeConfig.cronExpression || '0 * * * *' : nodeConfig.cronExpression,
+                            webhookPath: newType === 'WEBHOOK' ? nodeConfig.webhookPath || '/webhook' : nodeConfig.webhookPath,
+                            fieldMappings: newType === 'WEBHOOK' ? nodeConfig.fieldMappings || [] : nodeConfig.fieldMappings,
+                          });
+                        }}
+                        className="w-full border rounded-md px-2 py-1 text-sm"
+                      >
+                        <option value="NONE">无 (None)</option>
+                        <option value="SCHEDULE">定时调度 (Schedule)</option>
+                        <option value="WEBHOOK">Webhook</option>
+                      </select>
+                    </div>
+                    {nodeConfig.triggerType === 'SCHEDULE' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Cron 表达式</label>
+                        <input
+                          type="text"
+                          value={nodeConfig.cronExpression || '0 * * * *'}
+                          onChange={(e) => setNodeConfig({ ...nodeConfig, cronExpression: e.target.value })}
+                          className="w-full border rounded-md px-2 py-1 text-sm"
+                          placeholder="0 * * * *"
+                        />
+                        <div className="text-xs text-gray-500 mt-1">
+                          格式: 分 时 日 月 周 (例如: "0 * * * *" 表示每小时)
+                        </div>
+                      </div>
+                    )}
+                    {nodeConfig.triggerType === 'WEBHOOK' && (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Webhook 路径</label>
+                          <input
+                            type="text"
+                            value={nodeConfig.webhookPath || '/webhook'}
+                            onChange={(e) => setNodeConfig({ ...nodeConfig, webhookPath: e.target.value })}
+                            className="w-full border rounded-md px-2 py-1 text-sm"
+                            placeholder="/webhook/order"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">字段映射 (JSON)</label>
+                          <textarea
+                            value={JSON.stringify(nodeConfig.fieldMappings || [], null, 2)}
+                            onChange={(e) => {
+                              try {
+                                setNodeConfig({ ...nodeConfig, fieldMappings: JSON.parse(e.target.value) });
+                              } catch {}
+                            }}
+                            className="w-full border rounded-md px-2 py-1 text-sm h-20"
+                            placeholder='[{"sourceField": "orderId", "targetPath": "order.id"}]'
+                          />
+                        </div>
+                      </>
+                    )}
+                    <div className="mt-4 pt-4 border-t">
+                      <button
+                        onClick={async () => {
+                          if (!workflowId) {
+                            window.alert('工作流 ID 不可用，请先保存工作流');
+                            return;
+                          }
+                          try {
+                            const response = await fetch(`/api/workflows/${workflowId}/execute`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ context: {} }),
+                            });
+                            if (!response.ok) throw new Error(`执行失败: ${response.statusText}`);
+                            window.alert('触发成功！工作流已开始执行');
+                          } catch (error) {
+                            window.alert(`触发失败: ${error instanceof Error ? error.message : '未知错误'}`);
+                          }
+                        }}
+                        disabled={!workflowEnabled || !nodeConfig.triggerType || nodeConfig.triggerType === 'NONE'}
+                        className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      >
+                        手动触发
+                      </button>
+                      {!workflowEnabled && <p className="text-xs text-gray-500 mt-1">启用工作流后才能触发</p>}
+                      {workflowEnabled && nodeConfig.triggerType === 'NONE' && <p className="text-xs text-gray-500 mt-1">请选择触发类型</p>}
+                    </div>
+                  </>
+                )}
                 <div className="flex space-x-2 pt-2">
                   <button
                     onClick={updateSelectedNode}
