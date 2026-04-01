@@ -541,6 +541,73 @@ const defaultNodes: Node[] = [
 
 const defaultEdges: Edge[] = [];
 
+// Topological sort helper - sort nodes by their distance from START node
+function topologicalSort(
+  nodeMap: Record<string, WorkflowNode>,
+  edges: WorkflowEdge[],
+  startNodeId: string
+): string[] {
+  const nodeIds = Object.keys(nodeMap);
+  if (nodeIds.length === 0) return [];
+
+  // Build adjacency list
+  const inDegree: Record<string, number> = {};
+  const adjList: Record<string, string[]> = {};
+
+  nodeIds.forEach(id => {
+    inDegree[id] = 0;
+    adjList[id] = [];
+  });
+
+  // Build edges (from -> to)
+  edges.forEach(edge => {
+    if (adjList[edge.fromNodeId]) {
+      adjList[edge.fromNodeId].push(edge.toNodeId);
+      inDegree[edge.toNodeId]++;
+    }
+  });
+
+  // Find START node if not provided
+  let startId = startNodeId;
+  if (!startId || !nodeMap[startId]) {
+    // Find node with inDegree 0 (potential start)
+    const potentialStarts = nodeIds.filter(id => inDegree[id] === 0);
+    // Prefer START type node
+    const startNode = potentialStarts.find(id => (nodeMap[id] as any)?.type === 'START');
+    startId = startNode || potentialStarts[0] || nodeIds[0];
+  }
+
+  // BFS from START node
+  const queue: string[] = [startId];
+  const visited = new Set<string>();
+  const sorted: string[] = [];
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    if (visited.has(current)) continue;
+    visited.add(current);
+    sorted.push(current);
+
+    // Add dependents to queue
+    if (adjList[current]) {
+      adjList[current].forEach(dep => {
+        if (!visited.has(dep)) {
+          queue.push(dep);
+        }
+      });
+    }
+  }
+
+  // Add any remaining unvisited nodes
+  nodeIds.forEach(id => {
+    if (!visited.has(id)) {
+      sorted.push(id);
+    }
+  });
+
+  return sorted;
+}
+
 // Helper function to check if workflow can enable trigger
 function canEnableTrigger(workflow: { nodes?: Record<string, WorkflowNode>; startNodeId?: string }): boolean {
   if (!workflow.nodes || !workflow.startNodeId) return false;
@@ -574,19 +641,27 @@ export function WorkflowEditorPage() {
     if (existingWorkflow) {
       setWorkflowName(existingWorkflow.name);
       setWorkflowEnabled(existingWorkflow.enabled || false);
-      const loadedNodes: Node[] = Object.entries(existingWorkflow.nodes || {}).map(([id, node], index) => {
+
+      // Topological sort to ensure correct node order
+      const nodeMap = existingWorkflow.nodes || {};
+      const edges = existingWorkflow.edges || [];
+      const startNodeId = existingWorkflow.startNodeId;
+      const sortedNodeIds = topologicalSort(nodeMap, edges, startNodeId);
+
+      const loadedNodes: Node[] = sortedNodeIds.map((id, index) => {
+        const node = nodeMap[id];
         // Map backend node type to ReactFlow node type
         const backendType = (node as any).type || 'DATA_PROCESSING';
         const rfType = backendType === 'START' ? 'start' : backendType;
         return {
           id,
           type: rfType,
-          position: { x: 150 + index * 250, y: 200 },
+          position: { x: 100 + index * 250, y: 200 },
           data: { ...(node as any), type: backendType, label: (node as any).name || id },
         };
       });
       setNodes(loadedNodes);
-      const loadedEdges: Edge[] = (existingWorkflow.edges || []).map((e: WorkflowEdge) => ({
+      const loadedEdges: Edge[] = edges.map((e: WorkflowEdge) => ({
         id: e.id,
         source: e.fromNodeId,
         target: e.toNodeId,
