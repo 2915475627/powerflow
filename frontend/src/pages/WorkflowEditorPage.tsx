@@ -734,7 +734,7 @@ export function WorkflowEditorPage() {
       toNodeId: edge.target as string,
     }));
 
-    const startNodeId = nodes.length > 0 ? nodes[0].id : '';
+    const startNodeId = nodes.find(n => n.data?.type === 'START')?.id || '';
 
     const workflow: Workflow = {
       id: workflowId || `wf-${Date.now()}`,
