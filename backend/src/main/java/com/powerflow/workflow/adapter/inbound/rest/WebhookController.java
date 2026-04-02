@@ -75,7 +75,7 @@ public class WebhookController {
                 .status(result.getStatus())
                 .executionId(result.getExecutionId())
                 .triggeredAt(LocalDateTime.now())
-                .error(result.getError().orElse(null))
+                .error(result.getError())
                 .build());
 
             return ResponseEntity.ok(Map.of(

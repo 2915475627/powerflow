@@ -61,7 +61,7 @@ public class WorkflowExecutor {
                 .status(result.getStatus())
                 .input(nodeInput)
                 .output(result.getOutput())
-                .error(result.getError().orElse(null))
+                .error(result.getError())
                 .durationMs(durationMs)
                 .startTime(startTime)
                 .endTime(LocalDateTime.now())
@@ -77,7 +77,7 @@ public class WorkflowExecutor {
                     .status(ExecutionStatus.FAILED)
                     .finalContext(currentContext)
                     .nodeExecutions(executions)
-                    .error("Node " + node.getId() + " failed: " + result.getError().orElse("Unknown error"))
+                    .error("Node " + node.getId() + " failed: " + result.getError())
                     .build();
                 executionLogRepository.saveExecutionResult(failedResult);
                 return failedResult;

@@ -457,11 +457,9 @@ function TemplateSelectModal({
 // Node Type List Panel (shown when no node selected)
 function NodeTypeListPanel({ onAddNode }: { onAddNode: (type: string) => void }) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    '触发类': true,
-    '数据处理': true,
-    '集成': false,
-    '控制流': false,
-    '子工作流': false,
+    '流程节点': true,
+    '执行': true,
+    '控制流': true,
   });
 
   const toggleSection = (section: string) => {
@@ -470,48 +468,38 @@ function NodeTypeListPanel({ onAddNode }: { onAddNode: (type: string) => void })
 
   const nodeGroups = [
     {
-      category: '触发类',
+      category: '流程节点',
       nodes: [
         { type: 'start', label: '开始', color: 'bg-green-100 text-green-700', icon: '▶️' },
-      ],
-    },
-    {
-      category: '结束类',
-      nodes: [
         { type: 'END', label: '结束', color: 'bg-red-100 text-red-700', icon: '⏹️' },
       ],
     },
     {
-      category: '数据处理',
-      nodes: [
-        { type: 'DATA_PROCESSING', label: '数据处理', color: 'bg-indigo-100 text-indigo-700', icon: '⚙️' },
-        { type: 'CONDITION', label: '条件分支', color: 'bg-amber-100 text-amber-700', icon: '🔀' },
-      ],
-    },
-    {
-      category: '集成',
+      category: '执行',
       nodes: [
         { type: 'HTTP_REQUEST', label: 'HTTP 请求', color: 'bg-green-100 text-green-700', icon: '🌐' },
         { type: 'LLM_CALL', label: 'LLM 调用', color: 'bg-purple-100 text-purple-700', icon: '🤖' },
+        { type: 'DATA_PROCESSING', label: '执行', color: 'bg-indigo-100 text-indigo-700', icon: '⚙️' },
       ],
     },
     {
       category: '控制流',
       nodes: [
+        { type: 'CONDITION', label: '条件分支', color: 'bg-amber-100 text-amber-700', icon: '🔀' },
         { type: 'PARALLEL', label: '并行执行', color: 'bg-cyan-100 text-cyan-700', icon: '⚡' },
         { type: 'FOREACH', label: '循环迭代', color: 'bg-pink-100 text-pink-700', icon: '🔄' },
-        { type: 'BRANCH', label: '分支', color: 'bg-orange-100 text-orange-700', icon: '🌳' },
         { type: 'TRY_CATCH', label: '异常捕获', color: 'bg-red-100 text-red-700', icon: '🛡️' },
         { type: 'RETRY', label: '重试', color: 'bg-yellow-100 text-yellow-700', icon: '🔁' },
         { type: 'JOIN', label: '汇聚', color: 'bg-violet-100 text-violet-700', icon: '🔗' },
       ],
     },
-    {
-      category: '子工作流',
-      nodes: [
-        { type: 'SUBWORKFLOW', label: '子工作流', color: 'bg-teal-100 text-teal-700', icon: '📦' },
-      ],
-    },
+    // TODO: 子工作流后续实现
+    // {
+    //   category: '子工作流',
+    //   nodes: [
+    //     { type: 'SUBWORKFLOW', label: '子工作流', color: 'bg-teal-100 text-teal-700', icon: '📦' },
+    //   ],
+    // },
   ];
 
   return (
@@ -854,7 +842,7 @@ function addDegreeInfoToNodes(
 
 // Find branch nodes for a PARALLEL node based on edges
 function findBranchesForParallel(
-  nodes: Node[],
+  _nodes: Node[],
   edges: Edge[],
   parallelNodeId: string
 ): string[] {
@@ -945,8 +933,36 @@ export function WorkflowEditorPage() {
     }
   }, [existingWorkflow, setNodes, setEdges]);
 
+  // Track which edge is being modified (for onEdgeUpdate)
+  const [modifyingEdgeId, setModifyingEdgeId] = useState<string | null>(null);
+
   const onConnect = useCallback(
     (params: Connection) => {
+      // If we're modifying an existing edge, update it instead of creating new
+      if (modifyingEdgeId) {
+        const edge = edges.find(e => e.id === modifyingEdgeId);
+        if (!edge) return;
+
+        const sourceNode = nodes.find(n => n.id === params.source);
+        const targetNode = nodes.find(n => n.id === params.target);
+        if (!sourceNode || !targetNode) return;
+
+        // Update the edge
+        setEdges((eds) => {
+          const newEdges = eds.map((e) =>
+            e.id === modifyingEdgeId
+              ? { ...e, source: params.source as string, target: params.target as string }
+              : e
+          );
+          // Update nodes with new degree info
+          const nodesWithDegree = addDegreeInfoToNodes(nodes, newEdges, nodeDegreeConstraints);
+          setNodes(nodesWithDegree);
+          return newEdges;
+        });
+        setModifyingEdgeId(null);
+        return;
+      }
+
       const sourceNode = nodes.find(n => n.id === params.source);
       const targetNode = nodes.find(n => n.id === params.target);
       if (!sourceNode || !targetNode) return;
@@ -988,7 +1004,7 @@ export function WorkflowEditorPage() {
         return newEdges;
       });
     },
-    [nodes]
+    [nodes, edges, modifyingEdgeId, nodeDegreeConstraints]
   );
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
@@ -1003,6 +1019,12 @@ export function WorkflowEditorPage() {
     setSelectedNode(null);
     setJustSaved(false);
   }, []);
+
+  // Handle edge modification via drag - sets modifyingEdgeId then calls onConnect
+  const onReconnect = useCallback((oldEdge: Edge, newConnection: Connection) => {
+    setModifyingEdgeId(oldEdge.id);
+    onConnect(newConnection);
+  }, [onConnect]);
 
   const deleteSelectedEdge = useCallback(() => {
     if (!selectedEdge) return;
@@ -1020,7 +1042,7 @@ export function WorkflowEditorPage() {
     const typeLabels: Record<string, string> = {
       start: '开始',
       END: '结束',
-      DATA_PROCESSING: '新数据节点',
+      DATA_PROCESSING: '新执行节点',
       CONDITION: '新条件节点',
       HTTP_REQUEST: '新HTTP请求',
       LLM_CALL: '新LLM调用',
@@ -1298,10 +1320,14 @@ export function WorkflowEditorPage() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onReconnect={onReconnect}
             onNodeClick={onNodeClick}
             onEdgeClick={onEdgeClick}
             nodeTypes={nodeTypes}
             fitView
+            fitViewOptions={{ padding: 0.3, maxZoom: 0.8, minZoom: 0.1 }}
+            minZoom={0.1}
+            maxZoom={0.8}
             className="bg-gray-50"
           >
             <Controls />

@@ -1,5 +1,6 @@
 package com.powerflow.workflow.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.powerflow.workflow.domain.model.enums.ExecutionStatus;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -42,7 +43,9 @@ public class NodeExecution {
     public ExecutionStatus getStatus() { return status; }
     public Map<String, Object> getInput() { return input; }
     public Map<String, Object> getOutput() { return output; }
-    public Optional<String> getError() { return Optional.ofNullable(error); }
+    @JsonIgnore
+    public Optional<String> getErrorOptional() { return Optional.ofNullable(error); }
+    public String getError() { return error; }
     public long getDurationMs() { return durationMs; }
     public LocalDateTime getStartTime() { return startTime; }
     public LocalDateTime getEndTime() { return endTime; }

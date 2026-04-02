@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getTriggerLogs, TriggerExecutionLog } from '../api/workflowsApi';
+import { getTriggerLogs, TriggerExecutionLog } from '../api/workflow';
 
 export function TriggerLogsPage() {
   const [logs, setLogs] = useState<TriggerExecutionLog[]>([]);
