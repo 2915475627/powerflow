@@ -49,7 +49,9 @@ public class ChatService {
 
         try {
             // Build context with user message and chat history
-            Context context = new Context(Map.of("input", message), sessionId);
+            Map<String, Object> initialData = new HashMap<>();
+            initialData.put("input", message);
+            Context context = new Context(initialData, sessionId);
             for (LlmProvider.ChatMessage msg : session.getHistory()) {
                 context.addMessage(msg.role(), msg.content());
             }
@@ -85,7 +87,11 @@ public class ChatService {
         if (session == null) {
             return new ChatHistoryResponse(sessionId, List.of());
         }
-        return new ChatHistoryResponse(sessionId, session.getHistory());
+        List<LlmProvider.ChatMessage> history = session.getHistory();
+        List<Map<String, Object>> messageMaps = history.stream()
+            .map(msg -> Map.<String, Object>of("role", msg.role(), "content", msg.content()))
+            .toList();
+        return new ChatHistoryResponse(sessionId, messageMaps);
     }
 
     /**
@@ -106,7 +112,7 @@ public class ChatService {
         return ctx.toString();
     }
 
-    private List<NodeChain> buildChain(WorkflowExecutionResult result) {
+    private List<Map<String, Object>> buildChain(WorkflowExecutionResult result) {
         // Build chain from execution result - placeholder for now
         return List.of();
     }
@@ -117,18 +123,12 @@ public class ChatService {
         String message,
         String workflowExecutionId,
         String status,
-        List<NodeChain> chain
+        List<Map<String, Object>> chain
     ) {}
 
     public record ChatHistoryResponse(
         String sessionId,
-        List<LlmProvider.ChatMessage> messages
-    ) {}
-
-    public record NodeChain(
-        String nodeId,
-        String status,
-        Object output
+        List<Map<String, Object>> messages
     ) {}
 
     private static class ChatSession {

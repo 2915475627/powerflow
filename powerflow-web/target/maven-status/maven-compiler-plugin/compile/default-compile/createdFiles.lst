@@ -7,7 +7,6 @@ com/powerflow/web/config/PowerFlowConfig.class
 com/powerflow/web/controller/WorkflowController$CreateWorkflowRequest.class
 com/powerflow/web/service/ChatService.class
 com/powerflow/web/controller/ChatController.class
-com/powerflow/web/service/ChatService$NodeChain.class
 com/powerflow/web/service/ChatService$ChatSession.class
 com/powerflow/web/PowerFlowSpringBootApplication.class
 com/powerflow/web/persistence/InMemoryWorkflowRepository.class
