@@ -14,6 +14,7 @@ public class LlmProviderFactory {
         // Register built-in providers
         register(new OpenAiLlmProvider());
         register(new DeepSeekLlmProvider());
+        register(new MiniMaxLlmProvider());
     }
 
     /**

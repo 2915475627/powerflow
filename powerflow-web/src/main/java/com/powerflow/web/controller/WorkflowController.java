@@ -75,7 +75,8 @@ public class WorkflowController {
             return ResponseEntity.ok(Map.of(
                 "status", result.getStatus(),
                 "executionId", result.getExecutionId(),
-                "output", result.getFinalContext() != null ? result.getFinalContext().toMap() : Map.of()
+                "output", result.getFinalContext() != null ? result.getFinalContext().toMap() : Map.of(),
+                "error", result.getError() != null ? result.getError() : ""
             ));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));

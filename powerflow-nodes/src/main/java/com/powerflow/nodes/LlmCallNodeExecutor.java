@@ -42,8 +42,11 @@ public class LlmCallNodeExecutor implements NodeExecutorPort {
             double temperature = getDouble(node.getConfig(), "temperature", 0.7);
             int maxTokens = getInt(node.getConfig(), "maxTokens", 2048);
             String systemPrompt = (String) node.getConfig().get("systemPrompt");
-            String apiKey = (String) node.getConfig().get("apiKey");
-            String baseUrl = (String) node.getConfig().get("baseUrl");
+            // Get apiKey from node config, fallback to context (for runtime-provided credentials)
+            String apiKey = (String) node.getConfig().getOrDefault("apiKey",
+                context.get("apiKey").map(Object::toString).orElse(null));
+            String baseUrl = (String) node.getConfig().getOrDefault("baseUrl",
+                context.get("baseUrl").map(Object::toString).orElse(null));
 
             String resolvedPrompt = resolveExpression(prompt, context);
 
@@ -92,12 +95,21 @@ public class LlmCallNodeExecutor implements NodeExecutorPort {
 
     private String resolveExpression(String expression, Context context) {
         if (expression == null) return null;
+        // If expression doesn't contain SpEL variables, return as-is
+        if (!containsSpelVariables(expression)) {
+            return expression;
+        }
         ExpressionParser parser = new SpelExpressionParser();
         EvaluationContext evalContext = new StandardEvaluationContext();
         evalContext.setVariable("input", context.toMap());
         String transformed = transformMapAccess(expression);
         Object result = parser.parseExpression(transformed).getValue(evalContext);
         return result != null ? result.toString() : expression;
+    }
+
+    private boolean containsSpelVariables(String expression) {
+        // Check for SpEL variable references (#) or template expressions
+        return expression.contains("#");
     }
 
     private String transformMapAccess(String expression) {

@@ -30,11 +30,19 @@ public class ContextManager {
 
     /**
      * Write node output back to context based on outputMapping.
+     * If outputMapping is empty, writes all output keys to context with their original keys.
      */
     public void writeNodeOutput(Map<String, String> outputMapping,
                                 Map<String, Object> nodeOutput,
                                 Context context) {
+        if (nodeOutput == null || nodeOutput.isEmpty()) {
+            return;
+        }
         if (outputMapping == null || outputMapping.isEmpty()) {
+            // Fallback: write all output keys to context with their original keys
+            for (Map.Entry<String, Object> entry : nodeOutput.entrySet()) {
+                context.set(entry.getKey(), entry.getValue());
+            }
             return;
         }
         for (Map.Entry<String, String> entry : outputMapping.entrySet()) {

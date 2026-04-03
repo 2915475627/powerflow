@@ -51,6 +51,9 @@ public class ChatService {
             // Build context with user message and chat history
             Map<String, Object> initialData = new HashMap<>();
             initialData.put("input", message);
+            if (apiKey != null && !apiKey.isEmpty()) {
+                initialData.put("apiKey", apiKey);
+            }
             Context context = new Context(initialData, sessionId);
             for (LlmProvider.ChatMessage msg : session.getHistory()) {
                 context.addMessage(msg.role(), msg.content());
@@ -104,12 +107,34 @@ public class ChatService {
     private String extractLlmResponse(WorkflowExecutionResult result) {
         if (result.getFinalContext() == null) return null;
         Map<String, Object> ctx = result.getFinalContext().toMap();
-        for (Object value : ctx.values()) {
-            if (value instanceof String && ((String) value).length() > 10) {
-                return (String) value;
+
+        // First, look for common LLM output keys
+        String[] llmKeys = {"llmResponse", "response", "output", "result", "answer", "text"};
+        for (String key : llmKeys) {
+            if (ctx.containsKey(key) && ctx.get(key) instanceof String) {
+                String value = (String) ctx.get(key);
+                if (!value.startsWith("sk-") && !value.contains("apiKey")) {
+                    return value;
+                }
             }
         }
-        return ctx.toString();
+
+        // Fallback: look for any String value that doesn't look like a secret
+        for (Map.Entry<String, Object> entry : ctx.entrySet()) {
+            if (entry.getValue() instanceof String) {
+                String value = (String) entry.getValue();
+                String key = entry.getKey().toLowerCase();
+                // Skip potential secrets and context metadata
+                if (!key.contains("key") && !key.contains("token") && !key.contains("secret")
+                    && !key.contains("password") && !key.contains("api")
+                    && !value.startsWith("sk-") && !value.startsWith("eyJ")) {
+                    if (value.length() > 5) {
+                        return value;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private List<Map<String, Object>> buildChain(WorkflowExecutionResult result) {
