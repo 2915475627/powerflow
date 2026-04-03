@@ -5,6 +5,7 @@ import { NodeTestPage } from './pages/NodeTestPage';
 import { WorkflowEditorPage } from './pages/WorkflowEditorPage';
 import { ExecutionHistoryPage } from './pages/ExecutionHistoryPage';
 import { NodeConfigPage } from './pages/NodeConfigPage';
+import ChatPage from './pages/ChatPage';
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="history" element={<ExecutionHistoryPage />} />
         <Route path="node-config" element={<NodeConfigPage />} />
         <Route path="test/:workflowId/:nodeId" element={<NodeTestPage />} />
+        <Route path="chat" element={<ChatPage />} />
       </Route>
     </Routes>
   );

@@ -222,8 +222,8 @@ export function NodeConfigPanel({
       case 'start':
         return (
           <STARTNodeConfigPanel
-            config={nodeConfig as StartNodeConfig}
-            onChange={onNodeConfigChange}
+            config={nodeConfig as unknown as StartNodeConfig}
+            onChange={onNodeConfigChange as unknown as (c: StartNodeConfig) => void}
             workflowId={workflowId}
             workflowEnabled={workflowEnabled}
           />

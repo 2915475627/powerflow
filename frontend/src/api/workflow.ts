@@ -98,3 +98,39 @@ export const getTriggerLogs = (workflowId?: string, limit = 50) => {
   params.append('limit', limit.toString());
   return api.get(`/trigger-logs?${params}`);
 };
+
+// Chat API
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+export interface ChatResponse {
+  sessionId: string;
+  message: string;
+  workflowExecutionId?: string;
+  status?: string;
+  chain?: NodeChain[];
+}
+
+export interface NodeChain {
+  nodeId: string;
+  status: string;
+  output: unknown;
+}
+
+export const chatApi = {
+  send: async (sessionId: string | null, message: string, workflowId?: string, apiKey?: string): Promise<ChatResponse> => {
+    const response = await api.post('/chat', { sessionId, message, workflowId, apiKey });
+    return response.data;
+  },
+
+  getHistory: async (sessionId: string): Promise<{ sessionId: string; messages: ChatMessage[] }> => {
+    const response = await api.get(`/chat/${sessionId}/history`);
+    return response.data;
+  },
+
+  clearSession: async (sessionId: string): Promise<void> => {
+    await api.delete(`/chat/${sessionId}`);
+  },
+};

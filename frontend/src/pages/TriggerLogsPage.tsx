@@ -13,8 +13,8 @@ export function TriggerLogsPage() {
   const loadLogs = async () => {
     setLoading(true);
     try {
-      const data = await getTriggerLogs(workflowId || undefined);
-      setLogs(data);
+      const response = await getTriggerLogs(workflowId || undefined);
+      setLogs(response.data);
     } catch (error) {
       console.error('Failed to load trigger logs:', error);
     } finally {
@@ -56,7 +56,7 @@ export function TriggerLogsPage() {
               key={log.id}
               className={`p-4 border rounded ${
                 log.status === 'SUCCESS' ? 'border-green-200 bg-green-50' :
-                log.status === 'FAILED' ? 'border-red-200 bg-red-50' :
+                log.status === 'FAILURE' ? 'border-red-200 bg-red-50' :
                 'border-gray-200'
               }`}
             >
