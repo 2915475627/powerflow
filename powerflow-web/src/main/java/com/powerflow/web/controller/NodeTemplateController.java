@@ -61,6 +61,7 @@ public class NodeTemplateController {
             case CONDITION -> "Condition";
             case HTTP_REQUEST -> "HTTP Request";
             case LLM_CALL -> "LLM Call";
+            case PROMPT_TEMPLATE -> "Prompt Template";
             case PARALLEL -> "Parallel";
             case FOREACH -> "Foreach";
             case BRANCH -> "Branch";
@@ -79,6 +80,7 @@ public class NodeTemplateController {
             case CONDITION -> "Branch based on condition";
             case HTTP_REQUEST -> "Make HTTP requests";
             case LLM_CALL -> "Call LLM APIs";
+            case PROMPT_TEMPLATE -> "Render prompt with variables";
             case PARALLEL -> "Execute branches in parallel";
             case FOREACH -> "Iterate over items";
             case BRANCH -> "Branch workflow";
@@ -138,6 +140,10 @@ public class NodeTemplateController {
                 "operation", "transform",
                 "input", "",
                 "output", ""
+            );
+            case PROMPT_TEMPLATE -> Map.of(
+                "template", "",
+                "variables", Map.of()
             );
         };
     }

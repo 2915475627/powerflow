@@ -5,6 +5,7 @@ public enum NodeType {
     CONDITION,
     HTTP_REQUEST,
     LLM_CALL,
+    PROMPT_TEMPLATE,
     PARALLEL,
     FOREACH,
     BRANCH,

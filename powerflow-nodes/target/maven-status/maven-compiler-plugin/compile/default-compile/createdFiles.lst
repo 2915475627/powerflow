@@ -8,6 +8,7 @@ com/powerflow/nodes/ConditionNodeExecutor.class
 com/powerflow/nodes/HttpRequestNodeExecutor.class
 com/powerflow/nodes/LlmCallNodeExecutor.class
 com/powerflow/nodes/BranchNodeExecutor.class
+com/powerflow/nodes/PromptTemplateNodeExecutor.class
 com/powerflow/nodes/RetryNodeExecutor.class
 com/powerflow/nodes/JoinNodeExecutor.class
 com/powerflow/nodes/ForeachNodeExecutor.class

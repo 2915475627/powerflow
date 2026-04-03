@@ -11,3 +11,4 @@ com.powerflow.nodes.RetryNodeExecutor
 com.powerflow.nodes.TryCatchNodeExecutor
 com.powerflow.nodes.SubworkflowNodeExecutor
 com.powerflow.nodes.LlmCallNodeExecutor
+com.powerflow.nodes.PromptTemplateNodeExecutor

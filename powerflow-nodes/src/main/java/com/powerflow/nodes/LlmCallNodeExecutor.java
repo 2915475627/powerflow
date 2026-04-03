@@ -5,6 +5,9 @@ import com.powerflow.engine.domain.enums.NodeType;
 import com.powerflow.engine.domain.model.Context;
 import com.powerflow.engine.domain.model.Node;
 import com.powerflow.engine.domain.model.NodeResult;
+import com.powerflow.engine.domain.model.llm.LlmConfig;
+import com.powerflow.engine.domain.model.llm.LlmProvider;
+import com.powerflow.engine.domain.model.llm.LlmProviderFactory;
 import com.powerflow.engine.domain.port.outbound.NodeExecutorPort;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.ExpressionParser;
@@ -12,6 +15,7 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,20 +35,42 @@ public class LlmCallNodeExecutor implements NodeExecutorPort {
     @Override
     public NodeResult execute(Node node, Context context) {
         try {
-            String provider = (String) node.getConfig().getOrDefault("provider", "openai");
+            String providerName = (String) node.getConfig().getOrDefault("provider", "openai");
             String model = (String) node.getConfig().getOrDefault("model", "gpt-4");
             String prompt = (String) node.getConfig().get("prompt");
             String outputKey = (String) node.getConfig().getOrDefault("outputKey", "llmResponse");
+            double temperature = getDouble(node.getConfig(), "temperature", 0.7);
+            int maxTokens = getInt(node.getConfig(), "maxTokens", 2048);
+            String systemPrompt = (String) node.getConfig().get("systemPrompt");
+            String apiKey = (String) node.getConfig().get("apiKey");
+            String baseUrl = (String) node.getConfig().get("baseUrl");
 
             String resolvedPrompt = resolveExpression(prompt, context);
 
+            // Build LLM config
+            LlmConfig config = LlmConfig.builder()
+                .model(model)
+                .temperature(temperature)
+                .maxTokens(maxTokens)
+                .systemPrompt(systemPrompt)
+                .apiKey(apiKey)
+                .baseUrl(baseUrl)
+                .build();
+
+            // Get provider
+            LlmProvider provider = LlmProviderFactory.get(providerName);
+
+            // Get conversation history from context if available
+            List<LlmProvider.ChatMessage> history = context.getChatHistory();
+            String response;
+            if (history != null && !history.isEmpty()) {
+                response = provider.generateWithHistory(resolvedPrompt, history, config);
+            } else {
+                response = provider.generate(resolvedPrompt, config);
+            }
+
             Map<String, Object> output = new HashMap<>();
-            output.put(outputKey, Map.of(
-                "content", "LLM response placeholder - provider: " + provider + ", model: " + model,
-                "prompt", resolvedPrompt,
-                "provider", provider,
-                "model", model
-            ));
+            output.put(outputKey, response);
 
             String nextNodeId = (String) node.getConfig().get("nextNodeId");
 
@@ -83,5 +109,27 @@ public class LlmCallNodeExecutor implements NodeExecutorPort {
         }
         matcher.appendTail(result);
         return result.toString();
+    }
+
+    private double getDouble(Map<String, Object> config, String key, double defaultValue) {
+        Object value = config.get(key);
+        if (value == null) return defaultValue;
+        if (value instanceof Number) return ((Number) value).doubleValue();
+        try {
+            return Double.parseDouble(value.toString());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+
+    private int getInt(Map<String, Object> config, String key, int defaultValue) {
+        Object value = config.get(key);
+        if (value == null) return defaultValue;
+        if (value instanceof Number) return ((Number) value).intValue();
+        try {
+            return Integer.parseInt(value.toString());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 }

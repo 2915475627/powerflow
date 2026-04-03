@@ -10,6 +10,11 @@
 /Users/swufan/projects/github/powerflow/powerflow-engine/src/main/java/com/powerflow/engine/domain/model/TriggerExecutionLog.java
 /Users/swufan/projects/github/powerflow/powerflow-engine/src/main/java/com/powerflow/engine/domain/model/Workflow.java
 /Users/swufan/projects/github/powerflow/powerflow-engine/src/main/java/com/powerflow/engine/domain/model/WorkflowExecutionResult.java
+/Users/swufan/projects/github/powerflow/powerflow-engine/src/main/java/com/powerflow/engine/domain/model/llm/DeepSeekLlmProvider.java
+/Users/swufan/projects/github/powerflow/powerflow-engine/src/main/java/com/powerflow/engine/domain/model/llm/LlmConfig.java
+/Users/swufan/projects/github/powerflow/powerflow-engine/src/main/java/com/powerflow/engine/domain/model/llm/LlmProvider.java
+/Users/swufan/projects/github/powerflow/powerflow-engine/src/main/java/com/powerflow/engine/domain/model/llm/LlmProviderFactory.java
+/Users/swufan/projects/github/powerflow/powerflow-engine/src/main/java/com/powerflow/engine/domain/model/llm/OpenAiLlmProvider.java
 /Users/swufan/projects/github/powerflow/powerflow-engine/src/main/java/com/powerflow/engine/domain/port/inbound/WorkflowEnginePort.java
 /Users/swufan/projects/github/powerflow/powerflow-engine/src/main/java/com/powerflow/engine/domain/port/outbound/ExecutionLogPort.java
 /Users/swufan/projects/github/powerflow/powerflow-engine/src/main/java/com/powerflow/engine/domain/port/outbound/NodeExecutorCallback.java
