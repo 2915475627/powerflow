@@ -359,7 +359,19 @@ export function NodeConfigPanel({
                 <option value="openai">OpenAI</option>
                 <option value="anthropic">Anthropic</option>
                 <option value="azure">Azure OpenAI</option>
+                <option value="minimax">MiniMax</option>
+                <option value="deepseek">DeepSeek</option>
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+              <input
+                type="password"
+                value={(nodeConfig as any).apiKey || ''}
+                onChange={(e) => onNodeConfigChange({ ...nodeConfig, apiKey: e.target.value })}
+                className="w-full border rounded-md px-2 py-1 text-sm"
+                placeholder="sk-... (leave empty to use external)"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
@@ -398,7 +410,7 @@ export function NodeConfigPanel({
                 value={(nodeConfig as any).prompt || ''}
                 onChange={(e) => onNodeConfigChange({ ...nodeConfig, prompt: e.target.value })}
                 className="w-full border rounded-md px-2 py-1 text-sm h-24"
-                placeholder="Please process #input.value"
+                placeholder="Please process #input"
               />
             </div>
             <div>
