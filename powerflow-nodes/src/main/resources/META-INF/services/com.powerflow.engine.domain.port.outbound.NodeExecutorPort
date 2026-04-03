@@ -1,0 +1,13 @@
+com.powerflow.nodes.DataProcessingNodeExecutor
+com.powerflow.nodes.ConditionNodeExecutor
+com.powerflow.nodes.StartNodeExecutor
+com.powerflow.nodes.EndNodeExecutor
+com.powerflow.nodes.HttpRequestNodeExecutor
+com.powerflow.nodes.ParallelNodeExecutor
+com.powerflow.nodes.JoinNodeExecutor
+com.powerflow.nodes.BranchNodeExecutor
+com.powerflow.nodes.ForeachNodeExecutor
+com.powerflow.nodes.RetryNodeExecutor
+com.powerflow.nodes.TryCatchNodeExecutor
+com.powerflow.nodes.SubworkflowNodeExecutor
+com.powerflow.nodes.LlmCallNodeExecutor
