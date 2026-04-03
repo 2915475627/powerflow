@@ -95,21 +95,17 @@ public class LlmCallNodeExecutor implements NodeExecutorPort {
 
     private String resolveExpression(String expression, Context context) {
         if (expression == null) return null;
-        // If expression doesn't contain SpEL variables, return as-is
-        if (!containsSpelVariables(expression)) {
+        try {
+            ExpressionParser parser = new SpelExpressionParser();
+            EvaluationContext evalContext = new StandardEvaluationContext();
+            evalContext.setVariable("input", context.toMap());
+            String transformed = transformMapAccess(expression);
+            Object result = parser.parseExpression(transformed).getValue(evalContext);
+            return result != null ? result.toString() : expression;
+        } catch (Exception e) {
+            // If SpEL parsing fails (e.g., not a valid expression), return original
             return expression;
         }
-        ExpressionParser parser = new SpelExpressionParser();
-        EvaluationContext evalContext = new StandardEvaluationContext();
-        evalContext.setVariable("input", context.toMap());
-        String transformed = transformMapAccess(expression);
-        Object result = parser.parseExpression(transformed).getValue(evalContext);
-        return result != null ? result.toString() : expression;
-    }
-
-    private boolean containsSpelVariables(String expression) {
-        // Check for SpEL variable references (#) or template expressions
-        return expression.contains("#");
     }
 
     private String transformMapAccess(String expression) {
